@@ -49,8 +49,8 @@ export const translations = {
     diff: "Độ chênh lệch",
     compareWHO: "Đối chiếu WHO",
     openAtlas: "Mở Atlas",
-    resultText: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, boneAge: string, doctor: string, date: string, pah: string, error: string, examDate: string) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm): ${boneAge} tuổi (BS. ${doctor} phiên giải theo phim chụp ngày ${date}). Theo Phương pháp Dự đoán chiều cao trưởng thành theo tuổi xương hiện tại của GS. Tanner – Whitehouse – Marshall – Carter (University of London, PMID: 164838): Chiều cao dự kiến khi trưởng thành của trẻ là: ${pah}cm +/- ${error}cm. Ngày khám: ${examDate}. Kết quả dự đoán mang tính tham khảo, áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt.`,
+    resultText: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pah: string, error: string, examDate: string) => 
+      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 7cm` : ''}): ${boneAge} tuổi (BS. ${doctor} phiên giải theo phim chụp ngày ${date}). Theo Phương pháp Dự đoán chiều cao trưởng thành theo tuổi xương hiện tại của GS. Tanner – Whitehouse – Marshall – Carter (University of London, PMID: 164838): Chiều cao dự kiến khi trưởng thành của trẻ là: ${pah}cm +/- ${error}cm. Ngày khám: ${examDate}. Kết quả tính phục vụ cho các chỉ định lâm sàng, không mang tính tiên đoán, chỉ áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt.`,
   },
   en: {
     title: "Height Prediction by Dr. Son",
@@ -102,8 +102,8 @@ export const translations = {
     diff: "Difference",
     compareWHO: "Compare WHO",
     openAtlas: "Open Atlas",
-    resultText: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, boneAge: string, doctor: string, date: string, pah: string, error: string, examDate: string) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall): ${boneAge} years (Interpreted by Dr. ${doctor} from X-ray on ${date}). According to the Adult Height Prediction Method by current bone age by Prof. Tanner – Whitehouse – Marshall – Carter (University of London, PMID: 164838): The predicted adult height is: ${pah}cm +/- ${error}cm. Exam date: ${examDate}. The predicted result is for reference only, applicable to healthy children without special medical conditions.`,
+    resultText: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pah: string, error: string, examDate: string) => 
+      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 7cm` : ''}): ${boneAge} years (Interpreted by Dr. ${doctor} from X-ray on ${date}). According to the Adult Height Prediction Method by current bone age by Prof. Tanner – Whitehouse – Marshall – Carter (University of London, PMID: 164838): The predicted adult height is: ${pah}cm +/- ${error}cm. Exam date: ${examDate}. The calculated result is for clinical indications, not predictive, and only applicable to healthy children without special medical conditions.`,
   }
 };
 

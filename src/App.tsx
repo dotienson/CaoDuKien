@@ -253,7 +253,7 @@ function MainApp() {
   }
 
   const genderStr = gender === 'boy' ? t.boy.toLowerCase() : t.girl.toLowerCase();
-  const resultTextStr = pahResult ? t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, String(boneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate)) : '';
+  const resultTextStr = pahResult ? t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(boneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate)) : '';
 
   const handleCopy = () => {
     if (pahResult) {
