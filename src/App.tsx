@@ -268,13 +268,31 @@ function MainApp() {
 
   const handleExportPdf = async () => {
     if (pdfRef.current) {
-      const canvas = await html2canvas(pdfRef.current, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Height_Prediction_${name || 'Result'}.pdf`);
+      try {
+        const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        let imgWidth = pdfWidth;
+        let imgHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        // Scale down if height exceeds 1 page
+        if (imgHeight > pageHeight) {
+          imgHeight = pageHeight;
+          imgWidth = (canvas.width * pageHeight) / canvas.height;
+        }
+        
+        // Center horizontally if scaled down
+        const xOffset = (pdfWidth - imgWidth) / 2;
+        
+        pdf.addImage(imgData, 'PNG', xOffset, 0, imgWidth, imgHeight);
+        pdf.save(`CaoDuKien_${name || 'Result'}.pdf`);
+      } catch (error) {
+        console.error("Lỗi khi xuất PDF:", error);
+      }
     }
   };
 
