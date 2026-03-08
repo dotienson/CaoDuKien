@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { translations, Language } from './i18n';
 import { Gender, MenarcheStatus, getCoefficients, calculatePAH, calculateMPH, Coefficients } from './data/twmc';
-import { Copy, Download, Info, ChevronDown, ChevronUp } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { Copy, Info, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const DateInput = ({ value, onChange, label, ringColor }: { value: string, onChange: (val: string) => void, label: string, ringColor: string }) => {
@@ -152,7 +150,6 @@ export default function App() {
 function MainApp() {
   const [lang, setLang] = useState<Language>('vi');
   const t = translations[lang];
-  const pdfRef = useRef<HTMLDivElement>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -178,7 +175,6 @@ function MainApp() {
 
   const [showNote, setShowNote] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
   // Auto calculate age
   useEffect(() => {
@@ -246,7 +242,7 @@ function MainApp() {
       usedCoeffs = getCoefficients(gender, chronAge, menarche);
       if (usedCoeffs) {
         pahResult = calculatePAH(usedCoeffs, Number(numCurrentHeight), chronAge, Number(numBoneAge));
-        if (pahResult.pah > 190) {
+        if (pahResult.pah > 190 || pahResult.pah < 120) {
           outOfRangeError = true;
           pahResult = null;
         }
@@ -264,50 +260,6 @@ function MainApp() {
       navigator.clipboard.writeText(resultTextStr);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleExportPdf = async () => {
-    if (pdfRef.current && !isExporting) {
-      setIsExporting(true);
-      try {
-        // Small delay to allow UI to update
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const canvas = await html2canvas(pdfRef.current, { 
-          scale: 2, 
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          scrollX: 0,
-          scrollY: -window.scrollY
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        
-        let imgWidth = pdfWidth;
-        let imgHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        // Scale down if height exceeds 1 page
-        if (imgHeight > pageHeight) {
-          imgHeight = pageHeight;
-          imgWidth = (canvas.width * pageHeight) / canvas.height;
-        }
-        
-        // Center horizontally if scaled down
-        const xOffset = (pdfWidth - imgWidth) / 2;
-        
-        pdf.addImage(imgData, 'PNG', xOffset, 0, imgWidth, imgHeight);
-        pdf.save(`CaoDuKien_${name || 'Result'}.pdf`);
-      } catch (error) {
-        console.error("Lỗi khi xuất PDF:", error);
-        alert("Có lỗi xảy ra khi xuất PDF. Vui lòng thử lại.");
-      } finally {
-        setIsExporting(false);
-      }
     }
   };
 
@@ -363,17 +315,10 @@ function MainApp() {
           >
             EN
           </button>
-          <button 
-            onClick={handleExportPdf}
-            disabled={isExporting}
-            className={`flex items-center gap-1 px-3 py-1 rounded-full bg-white/50 text-gray-700 hover:bg-white/80 transition-colors text-sm font-medium ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <Download size={16} /> {isExporting ? '...' : t.exportPdf}
-          </button>
         </div>
 
         {/* Main Content to Export */}
-        <div ref={pdfRef} className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:p-10">
+        <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:p-10">
           
           {/* Header */}
           <div className="text-center mb-8 md:mb-10">
@@ -460,7 +405,12 @@ function MainApp() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">{t.currentHeight}</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-semibold text-gray-700">{t.currentHeight}</label>
+                  <a href="https://who-zeta.vercel.app" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${primaryColor} hover:underline`}>
+                    <ExternalLink size={12} /> {t.compareWHO}
+                  </a>
+                </div>
                 <input type="text" inputMode="decimal" value={currentHeight} onChange={e => setCurrentHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
                 {!isValidHeight(numCurrentHeight) && <p className="text-xs text-red-500 mt-1">50 - 200 cm</p>}
               </div>
@@ -509,7 +459,12 @@ function MainApp() {
               )}
 
               <div className="bg-white/60 p-4 rounded-2xl border border-white/50 shadow-sm">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">{t.boneAge}</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-semibold text-gray-800">{t.boneAge}</label>
+                  <a href="https://ba-drson.vercel.app" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${primaryColor} hover:underline`}>
+                    <ExternalLink size={12} /> {t.openAtlas}
+                  </a>
+                </div>
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1 space-y-3">
                     <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white focus:ring-2 ${ringColor} outline-none transition-all font-bold text-lg`} placeholder="e.g. 12.5" />
