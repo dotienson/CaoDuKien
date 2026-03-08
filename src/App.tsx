@@ -104,9 +104,9 @@ export default function App() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl w-full max-w-md relative z-10 border border-white/50"
+          className="bg-white/80 backdrop-blur-xl p-6 sm:p-8 rounded-3xl shadow-2xl w-[90%] max-w-sm relative z-10 border border-white/50"
         >
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-800">Height Prediction</h1>
             <p className="text-sm text-gray-500">by Dr. Son</p>
           </div>
@@ -178,6 +178,7 @@ function MainApp() {
 
   const [showNote, setShowNote] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Auto calculate age
   useEffect(() => {
@@ -267,9 +268,20 @@ function MainApp() {
   };
 
   const handleExportPdf = async () => {
-    if (pdfRef.current) {
+    if (pdfRef.current && !isExporting) {
+      setIsExporting(true);
       try {
-        const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
+        // Small delay to allow UI to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const canvas = await html2canvas(pdfRef.current, { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          scrollX: 0,
+          scrollY: -window.scrollY
+        });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
         
@@ -292,6 +304,9 @@ function MainApp() {
         pdf.save(`CaoDuKien_${name || 'Result'}.pdf`);
       } catch (error) {
         console.error("Lỗi khi xuất PDF:", error);
+        alert("Có lỗi xảy ra khi xuất PDF. Vui lòng thử lại.");
+      } finally {
+        setIsExporting(false);
       }
     }
   };
@@ -350,9 +365,10 @@ function MainApp() {
           </button>
           <button 
             onClick={handleExportPdf}
-            className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/50 text-gray-700 hover:bg-white/80 transition-colors text-sm font-medium"
+            disabled={isExporting}
+            className={`flex items-center gap-1 px-3 py-1 rounded-full bg-white/50 text-gray-700 hover:bg-white/80 transition-colors text-sm font-medium ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <Download size={16} /> {t.exportPdf}
+            <Download size={16} /> {isExporting ? '...' : t.exportPdf}
           </button>
         </div>
 
