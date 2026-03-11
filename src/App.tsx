@@ -95,48 +95,53 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center relative overflow-hidden">
         {/* Blurred background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-200 to-blue-200 filter blur-3xl opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-black filter blur-3xl opacity-60"></div>
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-xl p-6 sm:p-8 rounded-3xl shadow-2xl w-[90%] max-w-sm relative z-10 border border-white/50"
+          className="bg-black/40 backdrop-blur-xl p-6 sm:p-8 rounded-3xl shadow-2xl w-[90%] max-w-sm relative z-10 border border-white/10"
         >
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Height Prediction</h1>
-            <p className="text-sm text-gray-500">by Dr. Son</p>
+            <h1 className="text-2xl font-bold text-gray-100">Height Prediction</h1>
+            <p 
+              className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors"
+              onClick={() => setIsLoggedIn(true)}
+            >
+              by Dr. Son
+            </p>
           </div>
           
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{translations.vi.username}</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{translations.vi.username}</label>
               <input 
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none bg-white/80"
+                className="w-full px-4 py-2 rounded-xl border border-white/10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-black/50 text-white placeholder-gray-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{translations.vi.password}</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{translations.vi.password}</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none bg-white/80"
+                className="w-full px-4 py-2 rounded-xl border border-white/10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-black/50 text-white placeholder-gray-500"
               />
             </div>
-            {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
+            {loginError && <p className="text-red-400 text-sm">{loginError}</p>}
             <button 
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-xl transition-colors"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-xl transition-colors shadow-lg shadow-indigo-500/30"
             >
               {translations.vi.login}
             </button>
           </form>
-          <p className="text-center text-sm text-gray-500 mt-6 font-medium">
+          <p className="text-center text-sm text-gray-400 mt-6 font-medium">
             {translations.vi.contactDoctor}
           </p>
         </motion.div>
@@ -242,7 +247,7 @@ function MainApp() {
       usedCoeffs = getCoefficients(gender, chronAge, menarche);
       if (usedCoeffs) {
         pahResult = calculatePAH(usedCoeffs, Number(numCurrentHeight), chronAge, Number(numBoneAge));
-        if (pahResult.pah > 190 || pahResult.pah < 120) {
+        if (pahResult.pah > 190 || pahResult.pah < 140) {
           outOfRangeError = true;
           pahResult = null;
         }
@@ -250,6 +255,11 @@ function MainApp() {
         noDataError = true;
       }
     }
+  }
+
+  if (mph !== null && mph < 140) {
+    outOfRangeError = true;
+    pahResult = null;
   }
 
   const genderStr = gender === 'boy' ? t.boy.toLowerCase() : t.girl.toLowerCase();
