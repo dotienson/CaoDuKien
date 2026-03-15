@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { translations, Language } from './i18n';
 import { Gender, MenarcheStatus, getCoefficients, calculatePAH, calculateMPH, Coefficients } from './data/twmc';
+import { bpTable } from './bpTable';
 import { Copy, Info, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+type PredictionMethod = 'tw1' | 'bp' | 'both';
 
 const DateInput = ({ value, onChange, label, ringColor }: { value: string, onChange: (val: string) => void, label: string, ringColor: string }) => {
   const [dd, setDd] = useState('');
@@ -77,6 +80,8 @@ export default function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [lang, setLang] = useState<'vi' | 'en'>('vi');
+  const t = translations[lang];
 
   useEffect(() => {
     if (username.toLowerCase().includes('ta') && password.includes('5555')) {
@@ -105,9 +110,9 @@ export default function App() {
           className="bg-black/40 backdrop-blur-xl p-6 sm:p-8 rounded-3xl shadow-2xl w-[90%] max-w-sm relative z-10 border border-white/10"
         >
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-100">Height Prediction</h1>
+            <h1 className="text-2xl font-bold text-gray-100">{t.title}</h1>
             <p 
-              className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors"
+              className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors mt-1"
               onClick={() => setIsLoggedIn(true)}
             >
               by Dr. Son
@@ -177,6 +182,7 @@ function MainApp() {
   
   const [doctor, setDoctor] = useState('Đỗ Tiến Sơn');
   const [xrayDate, setXrayDate] = useState(today);
+  const [method, setMethod] = useState<PredictionMethod>('tw1');
 
   const [showNote, setShowNote] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -232,18 +238,21 @@ function MainApp() {
     : null;
   
   let pahResult: { pah: number; error: number } | null = null;
+  let bpResult: { pah: number; error: number; fraction: number } | null = null;
   let usedCoeffs: Coefficients | null = null;
   let noDataError = false;
+  let bpNoDataError = false;
   let outOfRangeError = false;
   let requireMenarcheError = false;
 
   const isMenarcheValid = gender === 'boy' || menarche !== 'none';
+  const chronAge = Number(ageYears) + (Number(ageMonths) || 0) / 12;
 
   if (numCurrentHeight && isValidHeight(numCurrentHeight) && ageYears !== '' && numBoneAge !== '' && !invalidAgeError) {
     if (!isMenarcheValid) {
       requireMenarcheError = true;
     } else {
-      const chronAge = Number(ageYears) + (Number(ageMonths) || 0) / 12;
+      // TW1 Calculation
       usedCoeffs = getCoefficients(gender, chronAge, menarche);
       if (usedCoeffs) {
         pahResult = calculatePAH(usedCoeffs, Number(numCurrentHeight), chronAge, Number(numBoneAge));
@@ -254,19 +263,53 @@ function MainApp() {
       } else {
         noDataError = true;
       }
+
+      // BP Calculation
+      const roundedBA = Math.round(Number(numBoneAge) * 4) / 4;
+      const diff = Number(numBoneAge) - chronAge;
+      let category: 'delayed' | 'average' | 'advanced' = 'average';
+      if (diff > 1) category = 'advanced';
+      else if (diff < -1) category = 'delayed';
+      
+      const table = bpTable[gender === 'boy' ? 'boys' : 'girls'][category];
+      const fraction = table[roundedBA as keyof typeof table];
+      
+      if (fraction !== undefined && chronAge >= 6 && chronAge <= 18.5) {
+        bpResult = {
+          pah: Math.round((Number(numCurrentHeight) / fraction) * 10) / 10,
+          error: 5,
+          fraction
+        };
+      } else {
+        bpNoDataError = true;
+      }
     }
   }
 
   if (mph !== null && mph < 140) {
     outOfRangeError = true;
     pahResult = null;
+    bpResult = null;
   }
 
   const genderStr = gender === 'boy' ? t.boy.toLowerCase() : t.girl.toLowerCase();
-  const resultTextStr = pahResult ? t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(boneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate)) : '';
+  
+  let resultTextStr = '';
+  if (numBoneAge !== '' && ageYears !== '') {
+    const diff = Number(numBoneAge) - chronAge;
+    if (Math.abs(diff) > 1 && bpResult) {
+      resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(boneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate));
+    } else if (Math.abs(diff) <= 1 && pahResult && bpResult && (method === 'both' || method === 'bp')) {
+      resultTextStr = t.resultTextBoth(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(boneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+    } else if (pahResult && (method === 'tw1' || method === 'both')) {
+      resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(boneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+    } else if (bpResult && method === 'bp') {
+      resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(boneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate));
+    }
+  }
 
   const handleCopy = () => {
-    if (pahResult) {
+    if (resultTextStr) {
       navigator.clipboard.writeText(resultTextStr);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -283,24 +326,21 @@ function MainApp() {
   // Chart Logic
   let chartMin = 100;
   let chartMax = 200;
-  const pahVal = pahResult ? pahResult.pah : null;
+  const pahVal = method === 'bp' ? (bpResult ? bpResult.pah : null) : (pahResult ? pahResult.pah : null);
+  const bpVal = bpResult ? bpResult.pah : null;
   const mphVal = mph;
 
-  if (pahVal && mphVal) {
-    const min = Math.min(pahVal, mphVal);
-    const max = Math.max(pahVal, mphVal);
+  const allVals = [pahVal, method === 'both' ? bpVal : null, mphVal].filter(v => v !== null) as number[];
+  
+  if (allVals.length > 0) {
+    const min = Math.min(...allVals);
+    const max = Math.max(...allVals);
     chartMin = Math.floor(min / 5) * 5 - 5;
     chartMax = Math.ceil(max / 5) * 5 + 5;
     if (chartMax - chartMin < 15) {
       chartMin -= 5;
       chartMax += 5;
     }
-  } else if (pahVal) {
-    chartMin = Math.floor(pahVal / 10) * 10 - 10;
-    chartMax = Math.ceil(pahVal / 10) * 10 + 10;
-  } else if (mphVal) {
-    chartMin = Math.floor(mphVal / 10) * 10 - 10;
-    chartMax = Math.ceil(mphVal / 10) * 10 + 10;
   }
   
   const getPercentage = (val: number) => {
@@ -333,10 +373,16 @@ function MainApp() {
           {/* Header */}
           <div className="text-center mb-8 md:mb-10">
             <h1 className={`text-2xl md:text-4xl font-bold tracking-tight ${primaryColor} mb-2`}>
-              Height Prediction by Dr. Son
+              {t.title}
             </h1>
-            <p className="text-xs md:text-base text-gray-500 font-medium">
-              Based on Tanner – Whitehouse – Marshall – Carter Method
+            <p className="text-sm md:text-base text-gray-600 font-medium">
+              {t.subtitle}
+            </p>
+            <p className="text-xs md:text-sm text-gray-400 font-normal mt-1 italic">
+              {t.subtitleNote}
+            </p>
+            <p className="text-xs md:text-sm text-gray-400 font-normal mt-1 italic">
+              {t.espeMember}
             </p>
           </div>
 
@@ -410,6 +456,9 @@ function MainApp() {
                       }} className={`w-20 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all text-center`} />
                       <span className="text-sm text-gray-500">{t.months}</span>
                     </div>
+                    {bpNoDataError && ageYears !== '' && numBoneAge !== '' && (
+                      <p className="text-xs text-red-500 mt-1">{t.bpNoCoeff}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -477,7 +526,7 @@ function MainApp() {
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1 space-y-3">
-                    <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white focus:ring-2 ${ringColor} outline-none transition-all font-bold text-lg`} placeholder="e.g. 12.5" />
+                    <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white focus:ring-2 ${ringColor} outline-none transition-all font-bold text-lg`} placeholder={t.egBoneAge} />
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">{t.interpretingDoctor}</label>
                       <input type="text" value={doctor} onChange={e => setDoctor(e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-white/50 bg-white/80 text-sm outline-none" />
@@ -485,27 +534,81 @@ function MainApp() {
                     <div>
                       <DateInput label={t.xrayDate} value={xrayDate} onChange={setXrayDate} ringColor={ringColor} />
                     </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">{t.predictionMethod}</label>
+                      <div className="flex flex-col gap-1">
+                        <label className="flex items-center gap-2 text-sm">
+                          <input type="radio" name="method" value="tw1" checked={method === 'tw1'} onChange={() => setMethod('tw1')} className={`text-${themeColor}-600 focus:ring-${themeColor}-500`} />
+                          {t.methodTW1}
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input type="radio" name="method" value="bp" checked={method === 'bp'} onChange={() => setMethod('bp')} className={`text-${themeColor}-600 focus:ring-${themeColor}-500`} />
+                          {t.methodBP}
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input type="radio" name="method" value="both" checked={method === 'both'} onChange={() => setMethod('both')} className={`text-${themeColor}-600 focus:ring-${themeColor}-500`} />
+                          {t.methodBoth}
+                        </label>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Result Box */}
-                  <div className={`flex-1 rounded-xl flex flex-col items-center justify-center p-4 text-white shadow-inner ${pahResult ? primaryBg : (outOfRangeError || noDataError || invalidAgeError ? 'bg-red-500' : 'bg-gray-400')}`}>
-                    <span className="text-sm font-medium opacity-80">{t.result}</span>
-                    {pahResult ? (
-                      <div className="text-center">
-                        <span className="text-3xl font-bold">{pahResult.pah}</span>
-                        <span className="text-sm ml-1">cm</span>
-                        <div className="text-xs opacity-80 mt-1">+/- {pahResult.error} cm</div>
+                  <div className={`flex-1 rounded-xl flex flex-col items-center justify-center p-4 text-white shadow-inner ${(method === 'tw1' ? pahResult : method === 'bp' ? bpResult : (pahResult || bpResult)) ? primaryBg : (outOfRangeError || noDataError || invalidAgeError ? 'bg-red-500' : 'bg-gray-400')}`}>
+                    {(!pahResult && !bpResult && !invalidAgeError && !requireMenarcheError && !outOfRangeError && !noDataError && !bpNoDataError) ? (
+                      <span className="text-4xl font-bold opacity-80">--</span>
+                    ) : method === 'both' ? (
+                      <div className="flex flex-row md:flex-col w-full h-full gap-2 md:gap-4">
+                        <div className="flex-1 flex flex-col items-center justify-center border-r md:border-r-0 md:border-b border-white/30 pr-2 md:pr-0 md:pb-2">
+                          <span className="text-xs font-medium opacity-80 text-center">{t.resultTW1}</span>
+                          {pahResult ? (
+                            <div className="text-center mt-1">
+                              <span className="text-2xl font-bold">{pahResult.pah}</span>
+                              <span className="text-xs ml-1">cm</span>
+                              <div className="text-[10px] opacity-80 mt-1">+/- {pahResult.error} cm</div>
+                            </div>
+                          ) : noDataError ? (
+                            <span className="text-xs font-bold mt-2 text-center">{t.noData}</span>
+                          ) : (
+                            <span className="text-xl font-bold mt-1 opacity-80">--</span>
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col items-center justify-center pl-2 md:pl-0 md:pt-2">
+                          <span className="text-xs font-medium opacity-80 text-center">{t.resultBP}</span>
+                          {bpResult ? (
+                            <div className="text-center mt-1">
+                              <span className="text-2xl font-bold">{bpResult.pah}</span>
+                              <span className="text-xs ml-1">cm</span>
+                              <div className="text-[10px] opacity-80 mt-1">+/- {bpResult.error} cm</div>
+                            </div>
+                          ) : bpNoDataError ? (
+                            <span className="text-xs font-bold mt-2 text-center">{t.noData}</span>
+                          ) : (
+                            <span className="text-xl font-bold mt-1 opacity-80">--</span>
+                          )}
+                        </div>
                       </div>
-                    ) : invalidAgeError ? (
-                      <span className="text-sm font-bold mt-2 text-center">{t.invalidAge}</span>
-                    ) : requireMenarcheError ? (
-                      <span className="text-sm font-bold mt-2 text-center">{t.requireMenarche}</span>
-                    ) : outOfRangeError ? (
-                      <span className="text-sm font-bold mt-2 text-center">{t.outOfRange}</span>
-                    ) : noDataError ? (
-                      <span className="text-sm font-bold mt-2 text-center">{t.noData}</span>
                     ) : (
-                      <span className="text-xl font-bold mt-1">--</span>
+                      <>
+                        <span className="text-sm font-medium opacity-80">{method === 'tw1' ? t.resultTW1 : t.resultBP}</span>
+                        {(method === 'tw1' ? pahResult : bpResult) ? (
+                          <div className="text-center">
+                            <span className="text-3xl font-bold">{(method === 'tw1' ? pahResult : bpResult)?.pah}</span>
+                            <span className="text-sm ml-1">cm</span>
+                            <div className="text-xs opacity-80 mt-1">+/- {(method === 'tw1' ? pahResult : bpResult)?.error} cm</div>
+                          </div>
+                        ) : invalidAgeError ? (
+                          <span className="text-sm font-bold mt-2 text-center">{t.invalidAge}</span>
+                        ) : requireMenarcheError ? (
+                          <span className="text-sm font-bold mt-2 text-center">{t.requireMenarche}</span>
+                        ) : outOfRangeError ? (
+                          <span className="text-sm font-bold mt-2 text-center">{t.outOfRange}</span>
+                        ) : (method === 'tw1' && noDataError) || (method === 'bp' && bpNoDataError) ? (
+                          <span className="text-sm font-bold mt-2 text-center">{t.noData}</span>
+                        ) : (
+                          <span className="text-4xl font-bold mt-1 opacity-80">--</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -513,13 +616,6 @@ function MainApp() {
             </div>
           </div>
 
-          {/* Formula Display */}
-          {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
-             <div className="text-center mb-4 opacity-50 text-xs font-mono text-gray-600">
-               {t.formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}
-             </div>
-          )}
-          
           {/* TW75 Note Display */}
           {noDataError && !invalidAgeError && (
              <div className="text-center mb-4 text-sm font-medium text-red-500">
@@ -528,7 +624,7 @@ function MainApp() {
           )}
 
           {/* Interpretation Text */}
-          {pahResult && (
+          {resultTextStr && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -561,17 +657,33 @@ function MainApp() {
               <div className="absolute left-0 right-0 top-0 border-t border-dashed border-gray-300"></div>
               <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-gray-300"></div>
 
-              {/* PAH Bar */}
-              <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
-                <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
-                  {pahResult ? `${pahResult.pah} cm` : '--'}
+              {/* PAH TW1 Bar */}
+              {(method === 'tw1' || method === 'both') && (
+                <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
+                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
+                    {pahResult ? `${pahResult.pah} cm` : '--'}
+                  </div>
+                  <div 
+                    className={`w-full rounded-t-md transition-all duration-1000 ${gender === 'girl' ? 'bg-pink-500' : 'bg-blue-500'} shadow-md`} 
+                    style={{ height: pahResult ? `${getPercentage(pahResult.pah)}%` : '5%' }}
+                  ></div>
+                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">PAH TW1</div>
                 </div>
-                <div 
-                  className={`w-full rounded-t-md transition-all duration-1000 ${gender === 'girl' ? 'bg-pink-500' : 'bg-blue-500'} shadow-md`} 
-                  style={{ height: pahResult ? `${getPercentage(pahResult.pah)}%` : '5%' }}
-                ></div>
-                <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">PAH</div>
-              </div>
+              )}
+
+              {/* PAH BP Bar */}
+              {(method === 'bp' || method === 'both') && (
+                <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
+                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
+                    {bpResult ? `${bpResult.pah} cm` : '--'}
+                  </div>
+                  <div 
+                    className={`w-full rounded-t-md transition-all duration-1000 ${gender === 'girl' ? 'bg-pink-400' : 'bg-blue-400'} shadow-md`} 
+                    style={{ height: bpResult ? `${getPercentage(bpResult.pah)}%` : '5%' }}
+                  ></div>
+                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">PAH BP</div>
+                </div>
+              )}
 
               {/* MPH Bar */}
               <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
@@ -586,20 +698,43 @@ function MainApp() {
               </div>
 
               {/* Difference indicator */}
-              {pahResult && mph && (
+              {method !== 'both' && (method === 'tw1' ? pahResult : bpResult) && mph && (
                 <div className="absolute top-0 right-0 md:-right-12 bg-white/90 px-3 py-2 rounded-xl shadow-sm border border-gray-200 text-center z-20">
                   <div className="text-xs text-gray-500 font-semibold">{t.diff}</div>
-                  <div className={`text-lg font-bold ${pahResult.pah > mph ? 'text-green-600' : 'text-red-500'}`}>
-                    {pahResult.pah > mph ? '+' : ''}{Math.round((pahResult.pah - mph) * 10) / 10} cm
+                  <div className={`text-lg font-bold ${(method === 'tw1' ? pahResult : bpResult)!.pah > mph ? 'text-green-600' : 'text-red-500'}`}>
+                    {(method === 'tw1' ? pahResult : bpResult)!.pah > mph ? '+' : ''}{Math.round(((method === 'tw1' ? pahResult : bpResult)!.pah - mph) * 10) / 10} cm
+                  </div>
+                </div>
+              )}
+              {method === 'both' && pahResult && bpResult && mph && (
+                <div className="absolute top-0 right-0 md:-right-12 bg-white/90 px-3 py-2 rounded-xl shadow-sm border border-gray-200 text-center z-20">
+                  <div className="text-xs text-gray-500 font-semibold">{t.diff}</div>
+                  <div className={`text-sm font-bold ${pahResult.pah > mph ? 'text-green-600' : 'text-red-500'}`}>
+                    TW1: {pahResult.pah > mph ? '+' : ''}{Math.round((pahResult.pah - mph) * 10) / 10} cm
+                  </div>
+                  <div className={`text-sm font-bold ${bpResult.pah > mph ? 'text-green-600' : 'text-red-500'}`}>
+                    BP: {bpResult.pah > mph ? '+' : ''}{Math.round((bpResult.pah - mph) * 10) / 10} cm
                   </div>
                 </div>
               )}
             </div>
             
-            <div className="text-xs text-gray-500 space-y-1 text-center max-w-2xl mx-auto mt-4">
-              <p>{t.pahLegend}</p>
-              <p>{t.mphLegend}</p>
-              <p className="italic">{t.illustrationNote}</p>
+            <div className="text-xs text-gray-500 text-center max-w-2xl mx-auto mt-4">
+              <div className="md:space-y-1">
+                <span className="md:block">{t.pahLegend} </span>
+                <span className="md:block">{t.mphLegend} </span>
+                <span className="italic md:block">{t.illustrationNote} </span>
+                {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
+                  <span className="italic md:block">
+                    {t.tw1Formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}{' '}
+                  </span>
+                )}
+                {bpResult && (
+                  <span className="italic md:block">
+                    {t.bpCoeff}: {bpResult.fraction}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
