@@ -766,9 +766,17 @@ function MainApp() {
               </AnimatePresence>
             </div>
             
-            <div className="mt-2">
+            <div className="mt-2 flex flex-col items-center gap-3">
               <a href="https://dotienson.com/app" target="_blank" rel="noopener noreferrer" className={`text-sm font-medium hover:underline ${primaryColor}`}>
                 {t.link}
+              </a>
+              <a 
+                href="https://tw2-drson.vercel.app/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center justify-center px-4 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-medium rounded-full shadow-sm transition-colors"
+              >
+                {t.useTW2}
               </a>
             </div>
           </div>
