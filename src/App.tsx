@@ -28,7 +28,12 @@ const DateInput = ({ value, onChange, label, ringColor }: { value: string, onCha
   const yyyyRef = useRef<HTMLInputElement>(null);
 
   const handleDdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+    let val = e.target.value.replace(/\D/g, '').slice(0, 2);
+    if (val.length === 2) {
+      const num = parseInt(val, 10);
+      if (num < 1) val = '01';
+      if (num > 31) val = '31';
+    }
     setDd(val);
     if (val.length === 2) {
       mmRef.current?.focus();
@@ -37,7 +42,12 @@ const DateInput = ({ value, onChange, label, ringColor }: { value: string, onCha
   };
 
   const handleMmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+    let val = e.target.value.replace(/\D/g, '').slice(0, 2);
+    if (val.length === 2) {
+      const num = parseInt(val, 10);
+      if (num < 1) val = '01';
+      if (num > 12) val = '12';
+    }
     setMm(val);
     if (val.length === 2) {
       yyyyRef.current?.focus();
@@ -46,20 +56,52 @@ const DateInput = ({ value, onChange, label, ringColor }: { value: string, onCha
   };
 
   const handleYyyyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (val.length === 4) {
+      const num = parseInt(val, 10);
+      if (num < 2000) val = '2000';
+      if (num > 2026) val = '2026';
+    }
     setYyyy(val);
     if (val.length === 4 && dd.length === 2 && mm.length === 2) {
       onChange(`${val}-${mm}-${dd}`);
     }
   };
 
-  const handleBlur = () => {
-    let d = dd;
-    let m = mm;
-    if (d.length > 0 && d.length < 2) { d = d.padStart(2, '0'); setDd(d); }
-    if (m.length > 0 && m.length < 2) { m = m.padStart(2, '0'); setMm(m); }
-    if (d && m && yyyy.length === 4) {
-      onChange(`${yyyy}-${m}-${d}`);
+  const handleBlur = (field: 'dd' | 'mm' | 'yyyy') => (e: React.FocusEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    if (!val) return;
+
+    let currentDd = dd;
+    let currentMm = mm;
+    let currentYyyy = yyyy;
+
+    if (field === 'dd') {
+      if (val.length === 1) val = val.padStart(2, '0');
+      const num = parseInt(val, 10);
+      if (num < 1) val = '01';
+      if (num > 31) val = '31';
+      setDd(val);
+      currentDd = val;
+    } else if (field === 'mm') {
+      if (val.length === 1) val = val.padStart(2, '0');
+      const num = parseInt(val, 10);
+      if (num < 1) val = '01';
+      if (num > 12) val = '12';
+      setMm(val);
+      currentMm = val;
+    } else if (field === 'yyyy') {
+      if (val.length === 4) {
+        const num = parseInt(val, 10);
+        if (num < 2000) val = '2000';
+        if (num > 2026) val = '2026';
+        setYyyy(val);
+        currentYyyy = val;
+      }
+    }
+
+    if (currentDd.length === 2 && currentMm.length === 2 && currentYyyy.length === 4) {
+      onChange(`${currentYyyy}-${currentMm}-${currentDd}`);
     }
   };
 
@@ -67,9 +109,9 @@ const DateInput = ({ value, onChange, label, ringColor }: { value: string, onCha
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
       <div className="flex gap-2">
-        <input ref={ddRef} value={dd} onChange={handleDdChange} onBlur={handleBlur} placeholder="DD" className={`w-14 md:w-16 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
-        <input ref={mmRef} value={mm} onChange={handleMmChange} onBlur={handleBlur} placeholder="MM" className={`w-14 md:w-16 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
-        <input ref={yyyyRef} value={yyyy} onChange={handleYyyyChange} onBlur={handleBlur} placeholder="YYYY" className={`w-20 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
+        <input ref={ddRef} value={dd} onChange={handleDdChange} onBlur={handleBlur('dd')} placeholder="DD" className={`w-14 md:w-16 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
+        <input ref={mmRef} value={mm} onChange={handleMmChange} onBlur={handleBlur('mm')} placeholder="MM" className={`w-14 md:w-16 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
+        <input ref={yyyyRef} value={yyyy} onChange={handleYyyyChange} onBlur={handleBlur('yyyy')} placeholder="YYYY" className={`w-20 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
       </div>
     </div>
   );
