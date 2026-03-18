@@ -812,14 +812,24 @@ function MainApp() {
               <a href="https://dotienson.com/app" target="_blank" rel="noopener noreferrer" className={`text-sm font-medium hover:underline ${primaryColor}`}>
                 {t.link}
               </a>
-              <a 
-                href="https://tw2-drson.vercel.app/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-flex items-center justify-center px-4 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-medium rounded-full shadow-sm transition-colors"
-              >
-                {t.useTW2}
-              </a>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <a 
+                  href="https://tw2-drson.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center justify-center px-4 py-1.5 bg-orange-700 hover:bg-orange-800 text-white text-xs font-medium rounded-full shadow-sm transition-colors"
+                >
+                  {t.useTW2}
+                </a>
+                <a 
+                  href="https://www.ceddcozum.com/Home/Pah" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center justify-center px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-full shadow-sm transition-colors"
+                >
+                  {t.useRWT}
+                </a>
+              </div>
             </div>
           </div>
 
