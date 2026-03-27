@@ -94,7 +94,7 @@ export const translations = {
     newSession: "Phiên khám mới",
     confirmReset: "Xác nhận xoá thông tin và tạo phiên khám mới?",
     confirm: "Xác nhận",
-    continue: "Tiếp tục",
+    cancel: "Hủy",
   },
   en: {
     title: "PAH TriPredict Dr.Son",
@@ -186,7 +186,7 @@ export const translations = {
     newSession: "New Session",
     confirmReset: "Confirm clearing information and starting a new session?",
     confirm: "Confirm",
-    continue: "Continue",
+    cancel: "Cancel",
   }
 };
 

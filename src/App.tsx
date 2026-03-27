@@ -1090,7 +1090,7 @@ function MainApp() {
         onConfirm={handleReset}
         title={t.confirmReset}
         confirmText={t.confirm}
-        cancelText={t.continue}
+        cancelText={t.cancel}
       />
     </div>
   );
