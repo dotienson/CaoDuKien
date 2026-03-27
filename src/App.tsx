@@ -233,6 +233,7 @@ function MainApp() {
   const [method, setMethod] = useState<PredictionMethod>('tw1');
 
   const [showNote, setShowNote] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Auto calculate age
@@ -431,6 +432,26 @@ function MainApp() {
       resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
     }
   }
+
+  const handleReset = () => {
+    setName('');
+    setGender('boy');
+    setDob('');
+    setExamDate(new Date().toISOString().split('T')[0]);
+    setAgeYears('');
+    setAgeMonths(0);
+    setCurrentHeight('');
+    setFatherHeight('');
+    setMotherHeight('');
+    setBoneAge('');
+    setNoBoneAge(false);
+    setXrayDate(new Date().toISOString().split('T')[0]);
+    setDoctor('Đỗ Tiến Sơn');
+    setMethod('all');
+    setWeight('');
+    setMenarche('none');
+    setShowResetModal(false);
+  };
 
   const handleCopy = () => {
     if (resultTextStr) {
@@ -889,9 +910,10 @@ function MainApp() {
           <div className="mt-10 pt-8 border-t border-white/40">
             <div className="relative w-full max-w-md mx-auto h-72 border-l-2 border-b-2 border-gray-400 flex items-end justify-around pb-0 px-2 md:px-8 mb-12">
               {/* Y-axis labels */}
-              <div className="absolute -left-12 bottom-0 text-xs text-gray-500 font-mono">{chartMin}cm</div>
-              <div className="absolute -left-12 top-0 text-xs text-gray-500 font-mono">{chartMax}cm</div>
-              <div className="absolute -left-12 top-1/2 text-xs text-gray-500 font-mono">{Math.round((chartMin + chartMax) / 2)}cm</div>
+              <div className="absolute left-1 bottom-0 text-[10px] text-gray-400 font-mono">{chartMin}</div>
+              <div className="absolute left-1 top-0 text-[10px] text-gray-400 font-mono">{chartMax}</div>
+              <div className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-mono">{Math.round((chartMin + chartMax) / 2)}</div>
+              <div className="absolute -left-6 -bottom-4 text-[10px] text-gray-400 font-mono">cm</div>
               
               {/* Grid lines */}
               <div className="absolute left-0 right-0 top-0 border-t border-dashed border-gray-300"></div>
@@ -907,7 +929,7 @@ function MainApp() {
                     className={`w-full rounded-t-md transition-all duration-1000 ${gender === 'girl' ? 'bg-pink-500' : 'bg-blue-500'} shadow-md`} 
                     style={{ height: pahResult ? `${getPercentage(pahResult.pah)}%` : '5%' }}
                   ></div>
-                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">PAH TW1</div>
+                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">TW1</div>
                 </div>
               )}
 
@@ -921,7 +943,7 @@ function MainApp() {
                     className={`w-full rounded-t-md transition-all duration-1000 ${gender === 'girl' ? 'bg-pink-400' : 'bg-blue-400'} shadow-md`} 
                     style={{ height: bpResult ? `${getPercentage(bpResult.pah)}%` : '5%' }}
                   ></div>
-                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">PAH BP</div>
+                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">BP</div>
                 </div>
               )}
 
@@ -935,7 +957,7 @@ function MainApp() {
                     className={`w-full rounded-t-md transition-all duration-1000 ${gender === 'girl' ? 'bg-pink-300' : 'bg-blue-300'} shadow-md`} 
                     style={{ height: rwtResult ? `${getPercentage(rwtResult.pah)}%` : '5%' }}
                   ></div>
-                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">PAH RWT</div>
+                  <div className="absolute -bottom-6 font-bold text-gray-800 text-sm">RWT</div>
                 </div>
               )}
 
@@ -984,7 +1006,7 @@ function MainApp() {
             
             <div className="text-xs text-gray-500 text-center max-w-2xl mx-auto mt-4">
               <div className="md:space-y-1">
-                <span className="md:block">{t.pahLegend} </span>
+                {t.pahLegend && <span className="md:block">{t.pahLegend} </span>}
                 <span className="md:block">{t.mphLegend} </span>
                 <span className="italic md:block">{t.illustrationNote} </span>
                 {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
@@ -1008,6 +1030,13 @@ function MainApp() {
 
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-white/40 text-center">
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="mb-8 inline-flex items-center gap-2 px-6 py-2.5 bg-white/80 hover:bg-white text-gray-700 font-semibold rounded-full shadow-sm border border-white/60 transition-all hover:scale-105"
+            >
+              <RefreshCw size={18} /> {t.newSession}
+            </button>
+
             <p className="text-xs text-gray-500 mb-4">{t.footerText}</p>
             
             <div className="inline-block text-left">
@@ -1053,6 +1082,80 @@ function MainApp() {
 
         </div>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      <Modal 
+        show={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={handleReset}
+        title={t.confirmReset}
+        confirmText={t.confirm}
+        cancelText={t.continue}
+      />
+    </div>
+  );
+}
+
+function RefreshCw({ size }: { size: number }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M8 16H3v5" />
+    </svg>
+  );
+}
+
+function Modal({ show, onClose, onConfirm, title, confirmText, cancelText, type = 'danger' }: { 
+  show: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  title: string; 
+  confirmText: string; 
+  cancelText: string;
+  type?: 'danger' | 'success';
+}) {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden"
+      >
+        <div className="p-6 text-center">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+            <Info size={32} />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+          <div className="flex flex-col gap-2 mt-6">
+            <button
+              onClick={onConfirm}
+              className="w-full py-3 rounded-xl font-bold text-white transition-transform active:scale-95 bg-red-500 hover:bg-red-600"
+            >
+              {confirmText}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-3 rounded-xl font-bold text-white transition-transform active:scale-95 bg-green-500 hover:bg-green-600"
+            >
+              {cancelText}
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
