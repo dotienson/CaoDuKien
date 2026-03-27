@@ -108,10 +108,19 @@ export function calculatePAH(
   };
 }
 
-export function calculateMPH(gender: Gender, fatherHeight: number, motherHeight: number): number {
-  if (gender === 'boy') {
-    return Math.round(((fatherHeight + motherHeight + 13) / 2) * 10) / 10;
-  } else {
-    return Math.round(((fatherHeight + motherHeight - 13) / 2) * 10) / 10;
+export function calculateMPH(gender: Gender, fatherHeight: number | null, motherHeight: number | null): number | null {
+  if (fatherHeight !== null && motherHeight !== null) {
+    if (gender === 'boy') {
+      return Math.round(((fatherHeight + motherHeight + 13) / 2) * 10) / 10;
+    } else {
+      return Math.round(((fatherHeight + motherHeight - 13) / 2) * 10) / 10;
+    }
+  } else if (fatherHeight === null && motherHeight !== null) {
+    if (gender === 'boy') {
+      return Math.round((99.9 + 0.492 * motherHeight) * 10) / 10;
+    } else {
+      return Math.round((96.3 + 0.436 * motherHeight) * 10) / 10;
+    }
   }
+  return null;
 }
