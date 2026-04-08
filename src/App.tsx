@@ -475,8 +475,9 @@ function MainApp() {
   const bpVal = (method === 'bp' || method === 'both' || method === 'all') ? (bpResult ? bpResult.pah : null) : null;
   const rwtVal = (method === 'rwt' || method === 'all') ? (rwtResult ? rwtResult.pah : null) : null;
   const mphVal = mph;
+  const vnAvgVal = gender === 'girl' ? 156.2 : 168.1;
 
-  const allVals = [pahVal, bpVal, rwtVal, mphVal].filter(v => v !== null) as number[];
+  const allVals = [pahVal, bpVal, rwtVal, mphVal, vnAvgVal].filter(v => v !== null) as number[];
   
   if (allVals.length > 0) {
     const min = Math.min(...allVals);
@@ -921,8 +922,8 @@ function MainApp() {
 
               {/* PAH TW1 Bar */}
               {(method === 'tw1' || method === 'both' || method === 'all') && !noDataError && (
-                <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
+                <div className="flex flex-col items-center relative w-12 md:w-16 z-10 h-full justify-end">
+                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-1 py-1 rounded shadow-sm whitespace-nowrap z-20">
                     {pahResult ? `${pahResult.pah} cm` : '--'}
                   </div>
                   <div 
@@ -935,8 +936,8 @@ function MainApp() {
 
               {/* PAH BP Bar */}
               {(method === 'bp' || method === 'both' || method === 'all') && !bpNoDataError && (
-                <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
+                <div className="flex flex-col items-center relative w-12 md:w-16 z-10 h-full justify-end">
+                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-1 py-1 rounded shadow-sm whitespace-nowrap z-20">
                     {bpResult ? `${bpResult.pah} cm` : '--'}
                   </div>
                   <div 
@@ -949,8 +950,8 @@ function MainApp() {
 
               {/* PAH RWT Bar */}
               {(method === 'rwt' || method === 'all') && !rwtNoDataError && (
-                <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
+                <div className="flex flex-col items-center relative w-12 md:w-16 z-10 h-full justify-end">
+                  <div className="absolute -top-8 text-sm font-bold text-gray-700 bg-white/90 px-1 py-1 rounded shadow-sm whitespace-nowrap z-20">
                     {rwtResult ? `${rwtResult.pah} cm` : '--'}
                   </div>
                   <div 
@@ -962,8 +963,8 @@ function MainApp() {
               )}
 
               {/* MPH Bar */}
-              <div className="flex flex-col items-center relative w-16 md:w-20 z-10 h-full justify-end">
-                <div className="absolute -top-8 text-sm font-bold text-gray-600 bg-white/90 px-2 py-1 rounded shadow-sm whitespace-nowrap z-20">
+              <div className="flex flex-col items-center relative w-12 md:w-16 z-10 h-full justify-end">
+                <div className="absolute -top-8 text-sm font-bold text-gray-600 bg-white/90 px-1 py-1 rounded shadow-sm whitespace-nowrap z-20">
                   {mph ? `${mph} cm` : '--'}
                 </div>
                 <div 
@@ -971,6 +972,18 @@ function MainApp() {
                   style={{ height: mph ? `${getPercentage(mph)}%` : '5%' }}
                 ></div>
                 <div className="absolute -bottom-6 font-bold text-gray-600 text-sm">MPH</div>
+              </div>
+
+              {/* VN'20 Bar */}
+              <div className="flex flex-col items-center relative w-12 md:w-16 z-10 h-full justify-end">
+                <div className="absolute -top-8 text-sm font-bold text-emerald-600 bg-white/90 px-1 py-1 rounded shadow-sm whitespace-nowrap z-20">
+                  {vnAvgVal} cm
+                </div>
+                <div 
+                  className="w-full rounded-t-md bg-emerald-400 transition-all duration-1000 shadow-md" 
+                  style={{ height: `${getPercentage(vnAvgVal)}%` }}
+                ></div>
+                <div className="absolute -bottom-6 font-bold text-emerald-600 text-sm">VN'20</div>
               </div>
 
               {/* Difference indicator */}
@@ -1009,6 +1022,9 @@ function MainApp() {
                 {t.pahLegend && <span className="md:block">{t.pahLegend} </span>}
                 <span className="md:block">{t.mphLegend} </span>
                 <span className="italic md:block">{t.illustrationNote} </span>
+                <span className="italic md:block">
+                  {gender === 'girl' ? t.vnAvgFemale : t.vnAvgMale}
+                </span>
                 {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
                   <span className="italic md:block">
                     {t.tw1Formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}{' '}
