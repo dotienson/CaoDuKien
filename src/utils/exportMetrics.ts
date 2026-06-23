@@ -7,14 +7,30 @@ import jsPDF from 'jspdf';
 
 export async function exportPdf(
   elementIdForReport: string,
-  patientName: string
+  patientName: string,
+  conclusions: string[],
+  t: any
 ) {
-  const chartEl = document.getElementById(elementIdForReport);
-  if (!chartEl) return;
+  const reportEl = document.getElementById(elementIdForReport);
+  if (!reportEl) return;
 
-  const canvas = await html2canvas(chartEl, { scale: 2 });
+  // Temporarily append conclusions
+  const conclusionsDiv = document.createElement('div');
+  conclusionsDiv.className = 'mt-8 p-4 bg-white/50 border border-gray-400 rounded-xl';
+  conclusionsDiv.innerHTML = `
+    <h3 class="font-bold text-lg mb-2 border-b border-gray-400 pb-2">Kết luận</h3>
+    ${conclusions.map(c => `<p class="text-sm mb-2 text-gray-800 font-medium text-justify">${c}</p>`).join('')}
+  `;
+  reportEl.appendChild(conclusionsDiv);
+
+  await new Promise(resolve => setTimeout(resolve, 50)); // Small wait for DOM update
+
+  const canvas = await html2canvas(reportEl, { scale: 2, useCORS: true, logging: false });
   const imgData = canvas.toDataURL('image/png');
   
+  // Remove temporary conclusions
+  reportEl.removeChild(conclusionsDiv);
+
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
@@ -131,7 +147,8 @@ export async function exportDocx(
         }),
         ...conclusions.map(c => new Paragraph({
           children: [new TextRun({ text: c, size: 24 })], // size 24 half-points = 12pt
-          spacing: { after: 200 }
+          spacing: { after: 200 },
+          alignment: AlignmentType.JUSTIFIED
         }))
       ]
     }]

@@ -515,33 +515,58 @@ function MainApp() {
   const genderStr = gender === 'boy' ? t.boy.toLowerCase() : t.girl.toLowerCase();
   
   let conclusions: string[] = [];
+  let resultTextStr = '';
   if ((numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && ageYears !== '') {
     if (isBoneAgeDeviated) {
+      if (bpResult) {
+        resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated);
+      }
+    } else if (method === 'all' && pahResult && bpResult && rwtResult) {
+      resultTextStr = t.resultTextAll(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
+    } else if (method === 'rwt' && rwtResult) {
+      resultTextStr = t.resultTextRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), noBoneAge);
+    } else if (pahResult && bpResult && (method === 'both' || method === 'all')) {
+      resultTextStr = t.resultTextBoth(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+    } else if (bpResult && rwtResult && method === 'all') {
+      resultTextStr = t.resultTextBPRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
+    } else if (pahResult && rwtResult && method === 'all') {
+      resultTextStr = t.resultTextTW1RWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
+    } else if (bpResult && (method === 'bp' || method === 'both' || method === 'all')) {
+      resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated);
+    } else if (pahResult && (method === 'tw1' || method === 'both' || method === 'all')) {
+      resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+    }
+
+    if (resultTextStr && (boneXpertPah || boneXpertError || aphv)) {
+      const bxSent = t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError);
+      if (resultTextStr.includes(t.examDatePrefix)) {
+        resultTextStr = resultTextStr.replace(t.examDatePrefix, bxSent + t.examDatePrefix);
+      }
+    }
+
+    // Generate export conclusions
+    if (isBoneAgeDeviated) {
       if (bpResult && (method === 'bp' || method === 'all' || method === 'both')) {
-        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error)));
+        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`));
       }
     } else {
       if (bpResult && (method === 'bp' || method === 'both' || method === 'all')) {
-        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error)));
+        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`));
       }
-      if (pahResult && (method === 'tw1' || method === 'both' || method === 'all')) {
-        conclusions.push(t.generateTW1Sent(String(pahResult.pah), String(pahResult.error)));
+      if (pahResult && usedCoeffs && (method === 'tw1' || method === 'both' || method === 'all')) {
+        const formulaStr = `(H × ${usedCoeffs.alpha}) + (A × ${usedCoeffs.beta}) + (BA × ${usedCoeffs.gamma}) + ${usedCoeffs.c}`;
+        conclusions.push(t.generateTW1Sent(String(pahResult.pah), String(pahResult.error), formulaStr));
       }
       if (rwtResult && (method === 'rwt' || method === 'all')) {
-        conclusions.push(t.generateRWTSent(String(rwtResult.pah), String(rwtResult.error)));
+        const c = rwtResult.coefficients;
+        const coeffsStr = `βRL=${c.betaRL}, βW=${c.betaW}, βMPS=${c.betaMPS}, βSA=${c.betaSA}, β0=${c.beta0}`;
+        conclusions.push(t.generateRWTSent(String(rwtResult.pah), String(rwtResult.error), coeffsStr));
       }
     }
     
     if (boneXpertPah || boneXpertError || aphv) {
       conclusions.push(t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError));
     }
-  }
-
-  let resultTextStr = '';
-  if (conclusions.length > 0) {
-    const intro = t.resultIntro(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), formatDate(examDate));
-    const outro = t.resultOutro(isBoneAgeDeviated);
-    resultTextStr = `${intro}\n\n` + conclusions.join('\n\n') + `\n\n${outro}`;
   }
 
   const handleReset = () => {
@@ -590,7 +615,7 @@ function MainApp() {
   };
 
   const handleExportPdf = () => {
-    exportPdf('hexapah-report', name);
+    exportPdf('hexapah-report', name, conclusions, t);
   };
 
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
@@ -735,7 +760,7 @@ function MainApp() {
                       <input type="number" inputMode="numeric" pattern="[0-9]*" placeholder={t.years} value={ageYears} onChange={e => handleAgeChange(e.target.value ? Number(e.target.value) : '')} className={`w-20 px-3 py-2 rounded-xl border bg-white outline-none transition-all text-center shadow-sm ${theme.inputBorder}`} />
                       <span className={`text-sm ${theme.labelMedium}`}>{t.years}</span>
                       <input type="number" inputMode="numeric" pattern="[0-9]*" min="0" max="11" placeholder="00" value={ageMonths} onChange={e => {
-                        let val = e.target.value ? Number(e.target.value) : '';
+                        let val: number | '' = e.target.value ? Number(e.target.value) : '';
                         if (typeof val === 'number' && val > 11) val = 11;
                         if (typeof val === 'number' && val < 0) val = 0;
                         setAgeMonths(val);
@@ -1060,27 +1085,11 @@ function MainApp() {
                 className="mb-8"
               >
                 <div className={`${theme.cardBg} p-4 rounded-2xl border ${theme.cardBorder} relative shadow-sm whitespace-pre-wrap`}>
-                  <p className={`text-sm ${theme.labelDark} leading-relaxed pr-24 font-medium`}>
+                  <p className={`text-sm ${theme.labelDark} leading-relaxed pr-10 font-medium text-justify`}>
                     {resultTextStr}
                   </p>
                   
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    <button 
-                      onClick={handleExportDocx}
-                      className="p-2 rounded-lg transition-colors bg-white hover:bg-gray-50 text-blue-600 shadow-sm border border-blue-200 flex items-center"
-                      title="Export DOCX"
-                    >
-                      <FileText size={16} className="mr-1" />
-                      <span className="text-xs font-bold">DOC</span>
-                    </button>
-                    <button 
-                      onClick={handleExportPdf}
-                      className="p-2 rounded-lg transition-colors bg-white hover:bg-gray-50 text-red-600 shadow-sm border border-red-200 flex items-center"
-                      title="Export PDF"
-                    >
-                      <FileDown size={16} className="mr-1" />
-                      <span className="text-xs font-bold">PDF</span>
-                    </button>
+                  <div className="absolute top-4 right-4 flex space-x-2" data-html2canvas-ignore="true">
                     <button 
                       onClick={handleCopy}
                       className={`p-2 rounded-lg transition-colors ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-50 text-gray-500 shadow-sm border border-gray-200'}`}
@@ -1230,9 +1239,29 @@ function MainApp() {
             </div>
           </div>
           </div>
+          
+          {/* Export Actions */}
+          <div className="flex justify-center flex-wrap gap-4 mt-8 mb-4">
+            <button 
+              onClick={handleExportDocx}
+              className={`px-6 py-2.5 rounded-full transition-all shadow-sm border flex items-center font-bold ${gender === 'girl' ? 'bg-pink-50 hover:bg-pink-100/70 border-pink-200 text-pink-700' : 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-blue-700'}`}
+              title="Xuất kết quả file DOCX"
+            >
+              <FileText size={18} className="mr-2" />
+              Export DOCX
+            </button>
+            <button 
+              onClick={handleExportPdf}
+              className={`px-6 py-2.5 rounded-full transition-all shadow-sm border flex items-center font-bold ${gender === 'girl' ? 'bg-pink-50 hover:bg-pink-100/70 border-pink-200 text-pink-700' : 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-blue-700'}`}
+              title="Xuất kết quả file PDF"
+            >
+              <FileDown size={18} className="mr-2" />
+              Export PDF
+            </button>
+          </div>
 
           {/* Footer */}
-          <div className="mt-12 pt-6 border-t border-white/40 text-center">
+          <div className="mt-8 pt-6 border-t border-white/40 text-center">
             <button
               onClick={() => setShowResetModal(true)}
               className={`mb-8 inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
