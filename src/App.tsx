@@ -142,7 +142,7 @@ export default function App() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === '12') {
+    if (password.endsWith('12')) {
       setIsLoggedIn(true);
       try {
         localStorage.setItem('hexaPahAuth', JSON.stringify({
@@ -159,46 +159,96 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center relative overflow-hidden">
-        {/* Blurred background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-black filter blur-3xl opacity-60"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] relative overflow-hidden font-inter selection:bg-indigo-500/30">
+        {/* Background effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-500/10 blur-[150px] rounded-full pointer-events-none" />
         
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-black/40 backdrop-blur-xl p-6 sm:p-8 rounded-3xl shadow-2xl w-[90%] max-w-sm relative z-10 border border-white/10"
+          initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative z-10 w-full max-w-sm mx-4"
         >
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-100">{t.title}</h1>
-            <p 
-              className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors mt-1"
-              onClick={() => setIsLoggedIn(true)}
-            >
-              by Dr. Son
-            </p>
-          </div>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">{translations.vi.password}</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-white/10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-black/50 text-white placeholder-gray-500 text-center text-lg tracking-widest"
-              />
+          <div className="bg-white/[0.03] backdrop-blur-2xl p-10 rounded-[2rem] shadow-2xl border border-white/10 relative overflow-hidden">
+            {/* Inner highlight */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            
+            <div className="text-center mb-10">
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-6 shadow-xl shadow-indigo-500/20">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
+                  {t.title}
+                </h1>
+                <p className="text-gray-400 mt-2 text-sm font-medium">Secure Access Portal</p>
+              </motion.div>
             </div>
-            {loginError && <p className="text-red-400 text-sm text-center">{loginError}</p>}
-            <button 
-              type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-xl transition-colors shadow-lg shadow-indigo-500/30 font-bold"
+            
+            <form onSubmit={handleLogin} className="space-y-8">
+              <div className="flex flex-col items-center">
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="relative group"
+                >
+                  <input 
+                    type="password" 
+                    placeholder="***"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
+                    className="w-48 px-4 py-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none bg-black/40 text-white placeholder-gray-600/50 text-center text-3xl tracking-[0.5em] transition-all duration-300 shadow-inner peer"
+                    style={{ fontFamily: 'monospace' }}
+                  />
+                  {/* Input glow */}
+                  <div className="absolute inset-0 -z-10 bg-indigo-500/20 blur-xl opacity-0 transition-opacity duration-300 peer-focus:opacity-100 rounded-2xl pointer-events-none" />
+                </motion.div>
+              </div>
+
+              {loginError && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-rose-400 text-sm text-center bg-rose-500/10 py-2.5 rounded-xl border border-rose-500/20 font-medium"
+                >
+                  {loginError}
+                </motion.p>
+              )}
+
+              <motion.button 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                type="submit"
+                className="group relative w-full bg-white text-black font-semibold py-3.5 rounded-xl transition-all overflow-hidden"
+              >
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-gray-200 to-white opacity-0 transition-opacity group-hover:opacity-100" />
+                <span className="relative flex items-center justify-center gap-2">
+                  {translations.vi.login}
+                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </span>
+              </motion.button>
+            </form>
+
+            <motion.p 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center text-xs text-gray-500 mt-8"
             >
-              {translations.vi.login}
-            </button>
-          </form>
-          <p className="text-center text-sm text-gray-400 mt-6 font-medium">
-            {translations.vi.contactDoctor}
-          </p>
+              {translations.vi.contactDoctor}
+            </motion.p>
+          </div>
         </motion.div>
       </div>
     );
@@ -611,7 +661,7 @@ function MainApp() {
       effectiveBoneAge,
       mph: mph || '---'
     };
-    exportDocx('hexapah-chart', patientData, {}, conclusions, t);
+    exportDocx(patientData, {}, conclusions, t);
   };
 
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
