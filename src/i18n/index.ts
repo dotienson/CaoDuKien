@@ -1,6 +1,6 @@
 export const translations = {
   vi: {
-    title: "PAH TriPredict Dr.Son",
+    title: "HexaPAH - Dr. Sơn",
     subtitle: "Dự đoán Chiều cao Chuyên sâu",
     subtitleNote: "BS. Đỗ Tiến Sơn - Bệnh viện Đa khoa Tâm Anh\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nUỷ viên Uỷ ban Đào tạo - Hội Nội tiết Nhi châu Âu",
     espeMember: "",
@@ -69,7 +69,7 @@ export const translations = {
     methodRWT: "Roche-Wainer-Thissen",
     methodAll: "Tất cả phương pháp",
     weight: "Cân nặng (kg)",
-    recumbentLength: "Chiều cao khi nằm (cm)",
+    recumbentLength: "Chiều dài nằm (cm)",
     actualWeight: "Cân nặng thực (kg)",
     noBoneAge: "Không có tuổi xương",
     noBoneAgeResult: "Trong lần khám này, trẻ chưa chụp Xquang tuổi xương.",
@@ -79,27 +79,29 @@ export const translations = {
     resultRWT: "RWT",
     resultBP: "BP",
     resultTW1: "TW1",
-    resultTextBPOnly: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, examDate: string, isDeviated: boolean) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. Đỗ Tiến Sơn phiên giải theo phim chụp ngày ${date}). Theo Phương pháp Dự đoán chiều cao trưởng thành theo tuổi xương hiện tại của Bayley-Pinneau (PubMed ID: 7205458): Chiều cao dự kiến khi trưởng thành của trẻ là: ${pahBP}cm +/- 5cm. Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.${isDeviated ? ' Không áp dụng phương pháp TW1,2 và RWT trong trường hợp này.' : ''}`,
-    resultTextBoth: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, examDate: string) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. Đỗ Tiến Sơn phiên giải theo phim chụp ngày ${date}). Chiều cao dự kiến khi trưởng thành của trẻ là: ${pahBP}cm +/- 5cm (Phương pháp Bayley-Pinneau, PMID: 7205458) và ${pahTW1}cm +/- ${errorTW1}cm (Phương pháp Tanner-Whitehouse Mark I, PMID: 164838). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.`,
-    resultText: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pah: string, error: string, examDate: string) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. ${doctor} phiên giải theo phim chụp ngày ${date}). Theo Phương pháp Dự đoán chiều cao trưởng thành theo tuổi xương hiện tại của GS. Tanner – Whitehouse (Mark I) (University of London, PMID: 164838): Chiều cao dự kiến khi trưởng thành của trẻ là: ${pah}cm +/- ${error}cm. Ngày khám: ${examDate}. Kết quả tính phục vụ cho các chỉ định lâm sàng, không mang tính tiên đoán, chỉ áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt.`,
-    resultTextRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahRWT: string, errorRWT: string, examDate: string, noBoneAge: boolean) => 
-      `${noBoneAge ? `Trong lần khám này, trẻ${name ? ` ${name}` : ''} chưa chụp Xquang tuổi xương (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}).` : `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. ${doctor} phiên giải theo phim chụp ngày ${date}).`} Chiều cao dự kiến khi trưởng thành của trẻ là: ${pahRWT}cm +/- ${errorRWT}cm (Phương pháp Roche-Wainer-Thissen, PMID: 172855). Ngày khám: ${examDate}. Kết quả tính phục vụ cho các chỉ định lâm sàng, không mang tính tiên đoán, chỉ áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt.`,
-    resultTextAll: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. Đỗ Tiến Sơn phiên giải theo phim chụp ngày ${date}). Chiều cao dự kiến khi trưởng thành của trẻ là: ${pahBP}cm +/- 5cm (Phương pháp Bayley-Pinneau, PMID: 7205458), ${pahTW1}cm +/- ${errorTW1}cm (Phương pháp Tanner-Whitehouse Mark I, PMID: 164838) và ${pahRWT}cm +/- ${errorRWT}cm (Phương pháp Roche-Wainer-Thissen, PMID: 172855). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.`,
-    resultTextBPRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahRWT: string, errorRWT: string, examDate: string) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. Đỗ Tiến Sơn phiên giải theo phim chụp ngày ${date}). Chiều cao dự kiến khi trưởng thành của trẻ là: ${pahBP}cm +/- 5cm (Phương pháp Bayley-Pinneau, PMID: 7205458) và ${pahRWT}cm +/- ${errorRWT}cm (Phương pháp Roche-Wainer-Thissen, PMID: 172855). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán. Không áp dụng phương pháp TW1,2 và RWT trong trường hợp này.`,
-    resultTextTW1RWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string) => 
-      `Tuổi xương hiện tại của trẻ${name ? ` ${name}` : ''} (trẻ ${genderStr} hiện tại ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${mph ? `, chiều cao di truyền (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} tuổi (BS. Đỗ Tiến Sơn phiên giải theo phim chụp ngày ${date}). Chiều cao dự kiến khi trưởng thành của trẻ là: ${pahTW1}cm +/- ${errorTW1}cm (Phương pháp Tanner-Whitehouse Mark I, PMID: 164838) và ${pahRWT}cm +/- ${errorRWT}cm (Phương pháp Roche-Wainer-Thissen, PMID: 172855). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.`,
+    resultIntro: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, examDate: string) => 
+      `* DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH\n(Trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi. Ngày khám: ${examDate})`,
+    resultOutro: (isDeviated: boolean) => `Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.${isDeviated ? ' Không áp dụng phương pháp TW1,2 và RWT trong trường hợp này.' : ''}`,
+    generateBPSent: (pah: string, error: string) => `Phương pháp Bayley-Pinneau (PMID: 13014169), sử dụng hệ số: Tuổi xương, Chiều cao, dự đoán chiều cao trưởng thành là: ${pah} cm +/- ${error} cm.`,
+    generateTW1Sent: (pah: string, error: string) => `Phương pháp Tanner-Whitehouse Mark I (TW1 - 1975), sử dụng hệ số: Tuổi xương, Chiều cao, dự đoán chiều cao trưởng thành là: ${pah} cm +/- ${error} cm.`,
+    generateRWTSent: (pah: string, error: string) => `Phương pháp Roche-Wainer-Thissen (PMID: 1168172), sử dụng hệ số: Tuổi hiện tại, Cân nặng, Chiều dài nằm/Chiều cao, Tuổi xương, MPH, dự đoán chiều cao trưởng thành là: ${pah} cm +/- ${error} cm.`,
     newSession: "Phiên khám mới",
     confirmReset: "Xác nhận xoá thông tin và tạo phiên khám mới?",
     confirm: "Xác nhận",
     cancel: "Hủy",
+    restoreSession: "Khôi phục phiên làm việc",
+    restoreSessionDesc: "Bạn có dữ liệu từ phiên làm việc trước. Bạn muốn giữ lại hay bắt đầu phiên mới?",
+    keepData: "Giữ lại",
+    ageGenderChanged: "Thay đổi Thông tin cơ bản",
+    ageGenderChangedDesc: "Bạn vừa thay đổi Tuổi hoặc Giới tính. Bạn có muốn tạo Phiên khám mới (xoá các số đo cũ) không?",
+    resetData: "Tạo mới",
+    labelBoneXpert: "Kết quả từ BoneXpert",
+    labelAphv: "Đỉnh tăng cao (APHV)",
+    examDatePrefix: "Ngày khám:",
+    generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => `Thuật toán BoneXpert AHP 3.1 (Visiana) dự đoán đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi, chiều cao trưởng thành khoảng ${bxPah || '...'} +/- ${bxErr || '...'} cm (tham chiếu AsiChi). `,
   },
   en: {
-    title: "PAH TriPredict Dr.Son",
+    title: "HexaPAH - Dr. Sơn",
     subtitle: "Advanced Height Prediction",
     subtitleNote: "Dr. Do Tien Son - Tam Anh General Hospital\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nMember of the Training Committee - ESPE",
     espeMember: "",
@@ -173,24 +175,26 @@ export const translations = {
     resultRWT: "RWT",
     resultBP: "BP",
     resultTW1: "TW1",
-    resultTextBPOnly: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, examDate: string, isDeviated: boolean) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. Do Tien Son from X-ray on ${date}). According to the Adult Height Prediction Method by current bone age by Bayley-Pinneau (PubMed ID: 7205458): The predicted adult height is: ${pahBP}cm +/- 5cm. Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive.${isDeviated ? ' TW1,2 and RWT methods are not applicable in this case.' : ''}`,
-    resultTextBoth: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, examDate: string) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. Do Tien Son from X-ray on ${date}). The predicted adult height is: ${pahBP}cm +/- 5cm (Bayley-Pinneau method, PMID: 7205458) and ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I method, PMID: 164838). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive.`,
-    resultText: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pah: string, error: string, examDate: string) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. ${doctor} from X-ray on ${date}). According to the Adult Height Prediction Method by current bone age by Prof. Tanner – Whitehouse (Mark I) (University of London, PMID: 164838): The predicted adult height is: ${pah}cm +/- ${error}cm. Exam date: ${examDate}. The calculated result is for clinical indications, not predictive, and only applicable to healthy children without special medical conditions.`,
-    resultTextRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahRWT: string, errorRWT: string, examDate: string, noBoneAge: boolean) => 
-      `${noBoneAge ? `${name ? name : 'The child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}).` : `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. ${doctor} from X-ray on ${date}).`} The predicted adult height is: ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen method, PMID: 172855). Exam date: ${examDate}. The calculated result is for clinical indications, not predictive, and only applicable to healthy children without special medical conditions.`,
-    resultTextAll: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. Do Tien Son from X-ray on ${date}). The predicted adult height is: ${pahBP}cm +/- 5cm (Bayley-Pinneau method, PMID: 7205458), ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I method, PMID: 164838) and ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen method, PMID: 172855). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive.`,
-    resultTextBPRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahRWT: string, errorRWT: string, examDate: string) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. Do Tien Son from X-ray on ${date}). The predicted adult height is: ${pahBP}cm +/- 5cm (Bayley-Pinneau method, PMID: 7205458) and ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen method, PMID: 172855). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive. TW1,2 and RWT methods are not applicable in this case.`,
-    resultTextTW1RWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, mph: string, boneAge: string, doctor: string, date: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string) => 
-      `Current bone age of ${name ? name : 'the child'} (${genderStr}, currently ${ageY} years ${ageM} months old, ${currentH}cm tall${mph ? `, Mid-Parental Height (MPH) ${mph}cm +/- 8.5cm` : ''}): ${boneAge} years (Interpreted by Dr. Do Tien Son from X-ray on ${date}). The predicted adult height is: ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I method, PMID: 164838) and ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen method, PMID: 172855). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive.`,
+    resultIntro: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, examDate: string) => 
+      `* PREDICTED ADULT HEIGHT\n(${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, bone age ~ ${boneAge} years. Exam date: ${examDate})`,
+    resultOutro: (isDeviated: boolean) => `The calculated result is for periodic monitoring and clinical indications, not predictive.${isDeviated ? ' TW1,2 and RWT methods are not applicable in this case.' : ''}`,
+    generateBPSent: (pah: string, error: string) => `Bayley-Pinneau method (PMID: 13014169), using coefficients: Bone Age, Current Height, predicts adult height: ${pah} cm +/- ${error} cm.`,
+    generateTW1Sent: (pah: string, error: string) => `Tanner-Whitehouse Mark I method (TW1 - 1975), using coefficients: Bone Age, Current Height, predicts adult height: ${pah} cm +/- ${error} cm.`,
+    generateRWTSent: (pah: string, error: string) => `Roche-Wainer-Thissen method (PMID: 1168172), using coefficients: Current Age, Weight, Recumbent Length/Height, Bone Age, MPH, predicts adult height: ${pah} cm +/- ${error} cm.`,
     newSession: "New Session",
     confirmReset: "Confirm clearing information and starting a new session?",
     confirm: "Confirm",
     cancel: "Cancel",
+    restoreSession: "Restore Session",
+    restoreSessionDesc: "You have data from a previous session. Do you want to keep it or start a new session?",
+    keepData: "Keep Data",
+    ageGenderChanged: "Basic Info Changed",
+    ageGenderChangedDesc: "You just changed Age or Gender. Do you want to start a New Session (clear old measurements)?",
+    resetData: "New Session",
+    labelBoneXpert: "BoneXpert AHP",
+    labelAphv: "Age at Peak Height Velocity (APHV)",
+    examDatePrefix: "Exam date:",
+    generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => `BoneXpert AHP 3.1 (Visiana) algorithm predicts APHV at ${aphvX || '...'} years, adult height around ${bxPah || '...'} +/- ${bxErr || '...'} cm (AsiChi reference). `,
   }
 };
 

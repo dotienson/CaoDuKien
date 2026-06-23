@@ -3,12 +3,13 @@ import { translations, Language } from './i18n';
 import { Gender, MenarcheStatus, getCoefficients, calculatePAH, calculateMPH, Coefficients } from './data/twmc';
 import { calculateRWT, RWTCoefficient } from './data/rwt';
 import { bpTable } from './bpTable';
-import { Copy, Info, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { exportDocx, exportPdf } from './utils/exportMetrics';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
 
-const DateInput = ({ value, onChange, label, ringColor }: { value: string, onChange: (val: string) => void, label: string, ringColor: string }) => {
+const DateInput = ({ value, onChange, label, className = '' }: { value: string, onChange: (val: string) => void, label: string, className?: string }) => {
   const [dd, setDd] = useState('');
   const [mm, setMm] = useState('');
   const [yyyy, setYyyy] = useState('');
@@ -110,9 +111,9 @@ const DateInput = ({ value, onChange, label, ringColor }: { value: string, onCha
     <div>
       <label className="block text-sm font-semibold text-gray-700 mb-1">{label}</label>
       <div className="flex gap-2">
-        <input ref={ddRef} value={dd} onChange={handleDdChange} onBlur={handleBlur('dd')} placeholder="DD" className={`w-14 md:w-16 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
-        <input ref={mmRef} value={mm} onChange={handleMmChange} onBlur={handleBlur('mm')} placeholder="MM" className={`w-14 md:w-16 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
-        <input ref={yyyyRef} value={yyyy} onChange={handleYyyyChange} onBlur={handleBlur('yyyy')} placeholder="YYYY" className={`w-20 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none text-center`} />
+        <input inputMode="numeric" pattern="[0-9]*" ref={ddRef} value={dd} onChange={handleDdChange} onBlur={handleBlur('dd')} placeholder="DD" className={`w-14 md:w-16 px-2 py-1.5 rounded-lg border bg-white outline-none text-center transition-all ${className}`} />
+        <input inputMode="numeric" pattern="[0-9]*" ref={mmRef} value={mm} onChange={handleMmChange} onBlur={handleBlur('mm')} placeholder="MM" className={`w-14 md:w-16 px-2 py-1.5 rounded-lg border bg-white outline-none text-center transition-all ${className}`} />
+        <input inputMode="numeric" pattern="[0-9]*" ref={yyyyRef} value={yyyy} onChange={handleYyyyChange} onBlur={handleBlur('yyyy')} placeholder="YYYY" className={`w-20 px-2 py-1.5 rounded-lg border bg-white outline-none text-center transition-all ${className}`} />
       </div>
     </div>
   );
@@ -120,22 +121,37 @@ const DateInput = ({ value, onChange, label, ringColor }: { value: string, onCha
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const t = translations[lang];
 
   useEffect(() => {
-    if (username.toLowerCase().includes('ta') && password.includes('5555')) {
-      setIsLoggedIn(true);
+    try {
+      const authInfo = localStorage.getItem('hexaPahAuth');
+      if (authInfo) {
+        const parsed = JSON.parse(authInfo);
+        if (parsed.isLoggedIn && parsed.expiresAt > Date.now()) {
+          setIsLoggedIn(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to access auth localStorage');
     }
-  }, [username, password]);
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.toLowerCase().includes('ta') && password.includes('5555')) {
+    if (password === '12') {
       setIsLoggedIn(true);
+      try {
+        localStorage.setItem('hexaPahAuth', JSON.stringify({
+          isLoggedIn: true,
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+        }));
+      } catch (e) {
+        console.warn('Failed to set auth localStorage');
+      }
     } else {
       setLoginError(translations.vi.loginError);
     }
@@ -164,27 +180,18 @@ export default function App() {
           
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">{translations.vi.username}</label>
-              <input 
-                type="text" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-white/10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-black/50 text-white placeholder-gray-500"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">{translations.vi.password}</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-white/10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-black/50 text-white placeholder-gray-500"
+                className="w-full px-4 py-2 rounded-xl border border-white/10 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-black/50 text-white placeholder-gray-500 text-center text-lg tracking-widest"
               />
             </div>
-            {loginError && <p className="text-red-400 text-sm">{loginError}</p>}
+            {loginError && <p className="text-red-400 text-sm text-center">{loginError}</p>}
             <button 
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-xl transition-colors shadow-lg shadow-indigo-500/30"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-xl transition-colors shadow-lg shadow-indigo-500/30 font-bold"
             >
               {translations.vi.login}
             </button>
@@ -231,10 +238,107 @@ function MainApp() {
   const [doctor, setDoctor] = useState('Đỗ Tiến Sơn');
   const [xrayDate, setXrayDate] = useState(today);
   const [method, setMethod] = useState<PredictionMethod>('tw1');
+  const [boneXpertPah, setBoneXpertPah] = useState('');
+  const [boneXpertError, setBoneXpertError] = useState('');
+  const [aphv, setAphv] = useState('');
 
   const [showNote, setShowNote] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showSessionPrompt, setShowSessionPrompt] = useState(false);
   const [copied, setCopied] = useState(false);
+  const isInitializing = useRef(true);
+
+  useEffect(() => {
+    try {
+      const savedInfo = localStorage.getItem('triPredictState');
+      if (savedInfo) {
+        try {
+          const parsed = JSON.parse(savedInfo);
+          if (parsed.currentHeight || parsed.boneAge || parsed.name) {
+            setShowRestoreModal(true);
+            if (parsed.name) setName(parsed.name);
+            if (parsed.gender) setGender(parsed.gender);
+            if (parsed.ageMode) setAgeMode(parsed.ageMode);
+            if (parsed.dob) setDob(parsed.dob);
+            if (parsed.examDate) setExamDate(parsed.examDate);
+            if (parsed.ageYears !== undefined) setAgeYears(parsed.ageYears);
+            if (parsed.ageMonths !== undefined) setAgeMonths(parsed.ageMonths);
+            if (parsed.currentHeight) setCurrentHeight(parsed.currentHeight);
+            if (parsed.fatherHeight) setFatherHeight(parsed.fatherHeight);
+            if (parsed.motherHeight) setMotherHeight(parsed.motherHeight);
+            if (parsed.weight) setWeight(parsed.weight);
+            if (parsed.recumbentLength) setRecumbentLength(parsed.recumbentLength);
+            if (parsed.menarche) setMenarche(parsed.menarche);
+            if (parsed.boneAge) setBoneAge(parsed.boneAge);
+            if (parsed.noBoneAge !== undefined) setNoBoneAge(parsed.noBoneAge);
+            if (parsed.doctor) setDoctor(parsed.doctor);
+            if (parsed.xrayDate) setXrayDate(parsed.xrayDate);
+            if (parsed.method) setMethod(parsed.method);
+            if (parsed.boneXpertPah) setBoneXpertPah(parsed.boneXpertPah);
+            if (parsed.boneXpertError) setBoneXpertError(parsed.boneXpertError);
+            if (parsed.aphv) setAphv(parsed.aphv);
+            if (parsed.lang) setLang(parsed.lang);
+          }
+        } catch (e) {
+          console.warn('Failed to parse cached state');
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to access localStorage');
+    }
+    setTimeout(() => {
+      isInitializing.current = false;
+    }, 500);
+  }, []);
+
+  useEffect(() => {
+    if (isInitializing.current) return;
+    const stateToSave = {
+      lang, name, gender, ageMode, dob, examDate, ageYears, ageMonths, currentHeight, fatherHeight, motherHeight, weight, recumbentLength, menarche, boneAge, noBoneAge, doctor, xrayDate, method, boneXpertPah, boneXpertError, aphv
+    };
+    try {
+      localStorage.setItem('triPredictState', JSON.stringify(stateToSave));
+    } catch (e) {
+      console.warn('Failed to set localStorage');
+    }
+  }, [lang, name, gender, ageMode, dob, examDate, ageYears, ageMonths, currentHeight, fatherHeight, motherHeight, weight, recumbentLength, menarche, boneAge, noBoneAge, doctor, xrayDate, method, boneXpertPah, boneXpertError, aphv]);
+
+  const confirmNewSessionPrompt = () => {
+    if (!isInitializing.current && (currentHeight || weight || boneAge || boneXpertPah)) {
+      setShowSessionPrompt(true);
+    }
+  };
+
+  const handleGenderChange = (newGender: Gender) => {
+    if (gender !== newGender) {
+      setGender(newGender);
+      confirmNewSessionPrompt();
+    }
+  };
+
+  const handleAgeChange = (val: number | '') => {
+    if (val !== ageYears) {
+      setAgeYears(val);
+      confirmNewSessionPrompt();
+    }
+  };
+
+  const clearSessionMeasurements = () => {
+    setCurrentHeight('');
+    setFatherHeight('');
+    setMotherHeight('');
+    setWeight('');
+    setRecumbentLength('');
+    setMenarche('none');
+    setBoneAge('');
+    setNoBoneAge(false);
+    setBoneXpertPah('');
+    setBoneXpertError('');
+    setAphv('');
+    setShowSessionPrompt(false);
+    setShowRestoreModal(false);
+  };
 
   // Auto calculate age
   useEffect(() => {
@@ -410,27 +514,34 @@ function MainApp() {
 
   const genderStr = gender === 'boy' ? t.boy.toLowerCase() : t.girl.toLowerCase();
   
-  let resultTextStr = '';
+  let conclusions: string[] = [];
   if ((numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && ageYears !== '') {
     if (isBoneAgeDeviated) {
-      if (bpResult) {
-        resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated);
+      if (bpResult && (method === 'bp' || method === 'all' || method === 'both')) {
+        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error)));
       }
-    } else if (method === 'all' && pahResult && bpResult && rwtResult) {
-      resultTextStr = t.resultTextAll(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
-    } else if (method === 'rwt' && rwtResult) {
-      resultTextStr = t.resultTextRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), noBoneAge);
-    } else if (pahResult && bpResult && (method === 'both' || method === 'all')) {
-      resultTextStr = t.resultTextBoth(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
-    } else if (bpResult && rwtResult && method === 'all') {
-      resultTextStr = t.resultTextBPRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
-    } else if (pahResult && rwtResult && method === 'all') {
-      resultTextStr = t.resultTextTW1RWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
-    } else if (bpResult && (method === 'bp' || method === 'both' || method === 'all')) {
-      resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated);
-    } else if (pahResult && (method === 'tw1' || method === 'both' || method === 'all')) {
-      resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+    } else {
+      if (bpResult && (method === 'bp' || method === 'both' || method === 'all')) {
+        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error)));
+      }
+      if (pahResult && (method === 'tw1' || method === 'both' || method === 'all')) {
+        conclusions.push(t.generateTW1Sent(String(pahResult.pah), String(pahResult.error)));
+      }
+      if (rwtResult && (method === 'rwt' || method === 'all')) {
+        conclusions.push(t.generateRWTSent(String(rwtResult.pah), String(rwtResult.error)));
+      }
     }
+    
+    if (boneXpertPah || boneXpertError || aphv) {
+      conclusions.push(t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError));
+    }
+  }
+
+  let resultTextStr = '';
+  if (conclusions.length > 0) {
+    const intro = t.resultIntro(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), formatDate(examDate));
+    const outro = t.resultOutro(isBoneAgeDeviated);
+    resultTextStr = `${intro}\n\n` + conclusions.join('\n\n') + `\n\n${outro}`;
   }
 
   const handleReset = () => {
@@ -450,6 +561,9 @@ function MainApp() {
     setMethod('all');
     setWeight('');
     setMenarche('none');
+    setBoneXpertPah('');
+    setBoneXpertError('');
+    setAphv('');
     setShowResetModal(false);
   };
 
@@ -461,12 +575,44 @@ function MainApp() {
     }
   };
 
+  const handleExportDocx = () => {
+    const patientData = {
+      name,
+      genderStr,
+      ageYears: ageYears || '0',
+      ageMonths: ageMonths || 0,
+      currentHeight,
+      weight,
+      effectiveBoneAge,
+      mph: mph || '---'
+    };
+    exportDocx('hexapah-chart', patientData, {}, conclusions, t);
+  };
+
+  const handleExportPdf = () => {
+    exportPdf('hexapah-report', name);
+  };
+
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
-  const bgGradient = gender === 'girl' ? 'from-pink-100 to-pink-200' : 'from-blue-100 to-blue-200';
+  const bgGradient = gender === 'girl' ? 'from-pink-100 via-rose-50 to-pink-200' : 'from-blue-100 via-sky-50 to-blue-200';
   const primaryColor = gender === 'girl' ? 'text-pink-600' : 'text-blue-600';
   const primaryBg = gender === 'girl' ? 'bg-pink-600' : 'bg-blue-600';
   const primaryHover = gender === 'girl' ? 'hover:bg-pink-700' : 'hover:bg-blue-700';
   const ringColor = gender === 'girl' ? 'focus:ring-pink-400' : 'focus:ring-blue-400';
+
+  const theme = gender === 'girl' ? {
+    cardBg: 'bg-pink-50/80',
+    cardBorder: 'border-pink-200',
+    inputBorder: 'border-pink-300 focus:border-pink-500 focus:ring-pink-200',
+    labelDark: 'text-pink-800 font-bold',
+    labelMedium: 'text-pink-700 font-semibold',
+  } : {
+    cardBg: 'bg-blue-50/80',
+    cardBorder: 'border-blue-200',
+    inputBorder: 'border-blue-300 focus:border-blue-500 focus:ring-blue-200',
+    labelDark: 'text-blue-800 font-bold',
+    labelMedium: 'text-blue-700 font-semibold',
+  };
 
   // Chart Logic
   let chartMin = 100;
@@ -531,25 +677,25 @@ function MainApp() {
             {/* Left Column */}
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">{t.name}</label>
+                <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.name}</label>
                 <input type="text" value={name} onChange={e => {
                   const val = e.target.value;
                   const capitalized = val.replace(/(^|\s)\S/g, l => l.toUpperCase());
                   setName(capitalized);
-                }} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
+                }} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">{t.gender}</label>
+                <label className={`block text-sm ${theme.labelDark} mb-2`}>{t.gender}</label>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => setGender('boy')}
+                    onClick={() => handleGenderChange('boy')}
                     className={`flex-1 py-2 rounded-xl font-medium transition-all ${gender === 'boy' ? 'bg-blue-500 text-white shadow-md' : 'bg-white/60 text-gray-600 hover:bg-blue-100'}`}
                   >
                     {t.boy}
                   </button>
                   <button 
-                    onClick={() => setGender('girl')}
+                    onClick={() => handleGenderChange('girl')}
                     className={`flex-1 py-2 rounded-xl font-medium transition-all ${gender === 'girl' ? 'bg-pink-500 text-white shadow-md' : 'bg-white/60 text-gray-600 hover:bg-pink-100'}`}
                   >
                     {t.girl}
@@ -557,17 +703,17 @@ function MainApp() {
                 </div>
               </div>
 
-              <div className="bg-white/60 p-3 md:p-4 rounded-2xl border border-white/50">
-                <div className="flex gap-2 mb-4 border-b border-white/50 pb-2">
+              <div className={`${theme.cardBg} p-3 md:p-4 rounded-2xl border ${theme.cardBorder} shadow-sm`}>
+                <div className={`flex gap-2 mb-4 border-b ${theme.cardBorder} pb-2`}>
                   <button 
                     onClick={() => setAgeMode('manual')}
-                    className={`text-sm font-medium px-2 py-1 rounded-lg transition-colors ${ageMode === 'manual' ? primaryBg + ' text-white' : 'text-gray-600 hover:bg-white/80'}`}
+                    className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${ageMode === 'manual' ? primaryBg + ' text-white shadow-sm' : 'bg-white/60 text-gray-600 hover:bg-white/80'}`}
                   >
                     {t.manualInput}
                   </button>
                   <button 
                     onClick={() => setAgeMode('dob')}
-                    className={`text-sm font-medium px-2 py-1 rounded-lg transition-colors ${ageMode === 'dob' ? primaryBg + ' text-white' : 'text-gray-600 hover:bg-white/80'}`}
+                    className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${ageMode === 'dob' ? primaryBg + ' text-white shadow-sm' : 'bg-white/60 text-gray-600 hover:bg-white/80'}`}
                   >
                     {t.calcByDob}
                   </button>
@@ -575,51 +721,51 @@ function MainApp() {
 
                 {ageMode === 'dob' ? (
                   <div className="space-y-4">
-                    <DateInput label={t.dob} value={dob} onChange={setDob} ringColor={ringColor} />
-                    <DateInput label={t.examDate} value={examDate} onChange={setExamDate} ringColor={ringColor} />
-                    <div className="pt-2">
-                      <span className="text-sm font-semibold text-gray-700">{t.currentAge}: </span>
-                      <span className="text-sm font-bold text-gray-900">{ageYears !== '' ? `${ageYears} ${t.years} ${ageMonths} ${t.months}` : '--'}</span>
+                    <DateInput label={t.dob} value={dob} onChange={setDob} className={theme.inputBorder} />
+                    <DateInput label={t.examDate} value={examDate} onChange={setExamDate} className={theme.inputBorder} />
+                    <div className="pt-2 flex items-center gap-2">
+                       <span className={`text-sm ${theme.labelMedium}`}>{t.currentAge}: </span>
+                       <span className={`text-sm font-bold ${theme.labelDark} bg-white px-2 py-1 rounded-md border ${theme.cardBorder}`}>{ageYears !== '' ? `${ageYears} ${t.years} ${ageMonths} ${t.months}` : '--'}</span>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">{t.currentAge}</label>
+                    <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.currentAge}</label>
                     <div className="flex items-center gap-2">
-                      <input type="number" placeholder={t.years} value={ageYears} onChange={e => setAgeYears(e.target.value ? Number(e.target.value) : '')} className={`w-20 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all text-center`} />
-                      <span className="text-sm text-gray-500">{t.years}</span>
-                      <input type="number" min="0" max="11" placeholder="00" value={ageMonths} onChange={e => {
+                      <input type="number" inputMode="numeric" pattern="[0-9]*" placeholder={t.years} value={ageYears} onChange={e => handleAgeChange(e.target.value ? Number(e.target.value) : '')} className={`w-20 px-3 py-2 rounded-xl border bg-white outline-none transition-all text-center shadow-sm ${theme.inputBorder}`} />
+                      <span className={`text-sm ${theme.labelMedium}`}>{t.years}</span>
+                      <input type="number" inputMode="numeric" pattern="[0-9]*" min="0" max="11" placeholder="00" value={ageMonths} onChange={e => {
                         let val = e.target.value ? Number(e.target.value) : '';
                         if (typeof val === 'number' && val > 11) val = 11;
                         if (typeof val === 'number' && val < 0) val = 0;
                         setAgeMonths(val);
-                      }} className={`w-20 px-2 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all text-center`} />
-                      <span className="text-sm text-gray-500">{t.months}</span>
+                      }} className={`w-20 px-3 py-2 rounded-xl border bg-white outline-none transition-all text-center shadow-sm ${theme.inputBorder}`} />
+                      <span className={`text-sm ${theme.labelMedium}`}>{t.months}</span>
                     </div>
                   </div>
                 )}
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-semibold text-gray-700">{t.currentHeight}</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={`block text-sm ${theme.labelDark}`}>{t.currentHeight}</label>
                   <a href="https://who-zeta.vercel.app" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${primaryColor} hover:underline`}>
                     <ExternalLink size={12} /> {t.compareWHO}
                   </a>
                 </div>
-                <input type="text" inputMode="decimal" value={currentHeight} onChange={e => setCurrentHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
-                {!isValidHeight(numCurrentHeight) && <p className="text-xs text-red-500 mt-1">50 - 200 cm</p>}
+                <input type="text" inputMode="decimal" value={currentHeight} onChange={e => setCurrentHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
+                {!isValidHeight(numCurrentHeight) && <p className="text-xs text-red-500 mt-1.5">50 - 200 cm</p>}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">{t.weight}</label>
-                  <input type="text" inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
+                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.weight} <span className="text-xs font-normal opacity-70">(opt)</span></label>
+                  <input type="text" inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">{t.recumbentLength} <span className="text-xs font-normal text-gray-500">(opt)</span></label>
-                  <input type="text" inputMode="decimal" value={recumbentLength} onChange={e => setRecumbentLength(e.target.value.replace(',', '.'))} placeholder={numCurrentHeight ? String(numCurrentHeight + 1.25) : ''} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
-                  {numRecumbentLength !== '' && numCurrentHeight !== '' && Number(numRecumbentLength) < Number(numCurrentHeight) && <p className="text-xs text-red-500 mt-1">Chiều cao nằm không hợp lệ</p>}
+                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.recumbentLength} <span className="text-xs font-normal opacity-70">(opt)</span></label>
+                  <input type="text" inputMode="decimal" value={recumbentLength} onChange={e => setRecumbentLength(e.target.value.replace(',', '.'))} placeholder={numCurrentHeight ? String(numCurrentHeight + 1.25) : ''} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
+                  {numRecumbentLength !== '' && numCurrentHeight !== '' && Number(numRecumbentLength) < Number(numCurrentHeight) && <p className="text-xs text-red-500 mt-1.5">Chiều dài nằm không hợp lệ</p>}
                 </div>
               </div>
 
@@ -629,25 +775,25 @@ function MainApp() {
             <div className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">{t.fatherHeight}</label>
-                  <input type="text" inputMode="decimal" value={fatherHeight} onChange={e => setFatherHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
-                  {!isValidHeight(numFatherHeight) && <p className="text-xs text-red-500 mt-1">50 - 200 cm</p>}
+                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.fatherHeight}</label>
+                  <input type="text" inputMode="decimal" value={fatherHeight} onChange={e => setFatherHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
+                  {!isValidHeight(numFatherHeight) && <p className="text-xs text-red-500 mt-1.5">50 - 200 cm</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">{t.motherHeight}</label>
-                  <input type="text" inputMode="decimal" value={motherHeight} onChange={e => setMotherHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white/80 focus:ring-2 ${ringColor} outline-none transition-all`} />
-                  {!isValidHeight(numMotherHeight) && <p className="text-xs text-red-500 mt-1">50 - 200 cm</p>}
+                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.motherHeight}</label>
+                  <input type="text" inputMode="decimal" value={motherHeight} onChange={e => setMotherHeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
+                  {!isValidHeight(numMotherHeight) && <p className="text-xs text-red-500 mt-1.5">50 - 200 cm</p>}
                 </div>
               </div>
               
-              <div className="bg-white/70 p-3 rounded-xl border border-white/60 text-sm text-gray-700 flex justify-between items-center">
-                <span className="font-medium">{t.mph}:</span>
-                <span className="font-bold text-lg">{mph} cm <span className="text-gray-500 text-xs font-normal">(+/- 8.5cm)</span></span>
+              <div className={`${theme.cardBg} p-3 rounded-xl border ${theme.cardBorder} text-sm flex justify-between items-center shadow-sm`}>
+                <span className={`font-medium ${theme.labelDark}`}>{t.mph}:</span>
+                <span className={`font-bold text-lg ${theme.labelDark}`}>{mph} cm <span className={`text-xs font-normal opacity-70`}>(+/- 8.5cm)</span></span>
               </div>
 
               {gender === 'girl' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">{t.menarche}</label>
+                  <label className={`block text-sm ${theme.labelDark} mb-2`}>{t.menarche}</label>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => setMenarche('pre')}
@@ -665,33 +811,52 @@ function MainApp() {
                 </div>
               )}
 
-              <div className="bg-white/60 p-4 rounded-2xl border border-white/50 shadow-sm">
+              <div className={`${theme.cardBg} p-4 rounded-2xl border ${theme.cardBorder} shadow-sm`}>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold text-gray-800">{t.boneAge}</label>
+                  <label className={`block text-sm ${theme.labelDark}`}>{t.boneAge}</label>
                   <a href="https://ba-drson.vercel.app" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${primaryColor} hover:underline`}>
                     <ExternalLink size={12} /> {t.openAtlas}
                   </a>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 space-y-3">
-                    <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} disabled={noBoneAge && canUseNoBoneAge} className={`w-full px-4 py-2 rounded-xl border border-white/50 bg-white focus:ring-2 ${ringColor} outline-none transition-all font-bold text-lg disabled:opacity-50`} placeholder={t.egBoneAge} />
+                  <div className="flex-1 space-y-4">
+                    <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} disabled={noBoneAge && canUseNoBoneAge} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all font-bold text-lg disabled:opacity-50 shadow-sm ${theme.inputBorder}`} placeholder={t.egBoneAge} />
                     
                     {canUseNoBoneAge && (
                       <div className="flex items-center gap-2">
-                        <input type="checkbox" id="noBoneAge" checked={noBoneAge} onChange={(e) => setNoBoneAge(e.target.checked)} className={`rounded border-gray-300 text-${themeColor}-600 focus:ring-${themeColor}-500`} />
-                        <label htmlFor="noBoneAge" className="text-sm text-gray-600">{t.noBoneAge}</label>
+                        <input type="checkbox" id="noBoneAge" checked={noBoneAge} onChange={(e) => setNoBoneAge(e.target.checked)} className={`rounded border-[var(--card-border)] text-${themeColor}-600 focus:ring-${themeColor}-500`} />
+                        <label htmlFor="noBoneAge" className={`text-sm ${theme.labelDark}`}>{t.noBoneAge}</label>
                       </div>
                     )}
                     
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">{t.interpretingDoctor}</label>
-                      <input type="text" value={doctor} onChange={e => setDoctor(e.target.value)} className="w-full px-3 py-1.5 rounded-lg border border-white/50 bg-white/80 text-sm outline-none" />
+                      <label className={`block text-xs ${theme.labelMedium} mb-1.5`}>{t.interpretingDoctor}</label>
+                      <input type="text" value={doctor} onChange={e => setDoctor(e.target.value)} className={`w-full px-4 py-1.5 rounded-lg border bg-white text-sm outline-none shadow-sm ${theme.inputBorder}`} />
+                    </div>
+                    
+                    <div className={`bg-white/80 p-3 rounded-xl border ${theme.cardBorder} shadow-sm mt-4`}>
+                      <div className="flex items-center gap-1 mb-2">
+                        <label className={`text-sm ${theme.labelDark} font-bold`}>{t.labelBoneXpert}</label>
+                        <a href="https://bonexpert.com/ahp/" target="_blank" rel="noopener noreferrer" className={`${theme.labelMedium} hover:opacity-80 transition-colors`} title="BoneXpert AHP">
+                          <ExternalLink size={14} />
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <input type="text" inputMode="decimal" value={boneXpertPah} onChange={e => setBoneXpertPah(e.target.value.replace(',', '.'))} placeholder="..." className={`flex-1 px-3 py-1.5 rounded-lg border focus:ring-2 bg-white text-sm outline-none text-center transition-all ${theme.inputBorder}`} />
+                        <span className={`text-sm ${theme.labelMedium} font-bold`}>+/-</span>
+                        <input type="text" inputMode="decimal" value={boneXpertError} onChange={e => setBoneXpertError(e.target.value.replace(',', '.'))} placeholder="cm" className={`w-16 px-2 py-1.5 rounded-lg border focus:ring-2 bg-white text-sm outline-none text-center transition-all ${theme.inputBorder}`} />
+                      </div>
+                      <div>
+                        <label className={`block text-xs ${theme.labelMedium} font-semibold mb-1.5`}>{t.labelAphv}</label>
+                        <input type="text" inputMode="decimal" value={aphv} onChange={e => setAphv(e.target.value.replace(',', '.'))} placeholder="..." className={`w-full px-3 py-1.5 rounded-lg border focus:ring-2 bg-white text-sm outline-none transition-all ${theme.inputBorder}`} />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <DateInput label={t.xrayDate} value={xrayDate} onChange={setXrayDate} className={theme.inputBorder} />
                     </div>
                     <div>
-                      <DateInput label={t.xrayDate} value={xrayDate} onChange={setXrayDate} ringColor={ringColor} />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-500 mb-1">{t.predictionMethod}</label>
+                      <label className={`block text-xs ${theme.labelMedium} mb-1.5`}>{t.predictionMethod}</label>
                       <div className="flex flex-col gap-1">
                         {availableMethods.tw1 && (
                           <label className="flex items-center gap-2 text-sm">
@@ -885,31 +1050,52 @@ function MainApp() {
              </div>
           )}
 
-          {/* Interpretation Text */}
-          {resultTextStr && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mb-8"
-            >
-              <div className="bg-white/70 p-4 rounded-2xl border border-white/60 relative">
-                <p className="text-sm text-gray-700 leading-relaxed pr-10">
-                  {resultTextStr}
-                </p>
-                <button 
-                  onClick={handleCopy}
-                  className={`absolute top-4 right-4 p-2 rounded-lg transition-colors ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-50 text-gray-500 shadow-sm'}`}
-                  title={t.copy}
-                >
-                  <Copy size={18} />
-                </button>
-              </div>
-            </motion.div>
-          )}
+          {/* Report Wrapper for PDF */}
+          <div id="hexapah-report" className="bg-transparent p-2 -mx-2 rounded-xl">
+            {/* Interpretation Text */}
+            {resultTextStr && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mb-8"
+              >
+                <div className={`${theme.cardBg} p-4 rounded-2xl border ${theme.cardBorder} relative shadow-sm whitespace-pre-wrap`}>
+                  <p className={`text-sm ${theme.labelDark} leading-relaxed pr-24 font-medium`}>
+                    {resultTextStr}
+                  </p>
+                  
+                  <div className="absolute top-4 right-4 flex space-x-2">
+                    <button 
+                      onClick={handleExportDocx}
+                      className="p-2 rounded-lg transition-colors bg-white hover:bg-gray-50 text-blue-600 shadow-sm border border-blue-200 flex items-center"
+                      title="Export DOCX"
+                    >
+                      <FileText size={16} className="mr-1" />
+                      <span className="text-xs font-bold">DOC</span>
+                    </button>
+                    <button 
+                      onClick={handleExportPdf}
+                      className="p-2 rounded-lg transition-colors bg-white hover:bg-gray-50 text-red-600 shadow-sm border border-red-200 flex items-center"
+                      title="Export PDF"
+                    >
+                      <FileDown size={16} className="mr-1" />
+                      <span className="text-xs font-bold">PDF</span>
+                    </button>
+                    <button 
+                      onClick={handleCopy}
+                      className={`p-2 rounded-lg transition-colors ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-50 text-gray-500 shadow-sm border border-gray-200'}`}
+                      title={t.copy}
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-          {/* Chart Section */}
-          <div className="mt-10 pt-8 border-t border-white/40">
-            <div className="relative w-full max-w-md mx-auto h-72 border-l-2 border-b-2 border-gray-400 flex items-end justify-around pb-0 px-2 md:px-8 mb-12">
+            {/* Chart Section */}
+            <div className="mt-10 pt-8 border-t border-white/40">
+              <div id="hexapah-chart" className="relative w-full max-w-md mx-auto h-72 border-l-2 border-b-2 border-gray-400 flex items-end justify-around pb-0 px-2 md:px-8 mb-12 bg-white/50 rounded-tr-lg">
               {/* Y-axis labels */}
               <div className="absolute left-1 bottom-0 text-[10px] text-gray-400 font-mono">{chartMin}</div>
               <div className="absolute left-1 top-0 text-[10px] text-gray-400 font-mono">{chartMax}</div>
@@ -1037,18 +1223,19 @@ function MainApp() {
                 )}
                 {rwtResult && (
                   <span className="italic md:block">
-                    RWT Coefficients: βRL={rwtResult.coefficients.betaRL}, βW={rwtResult.coefficients.betaW}, βMPS={rwtResult.coefficients.betaMPS}, βSA={rwtResult.coefficients.betaSA}, β0={rwtResult.coefficients.beta0}
+                    RWT Coeffs: βRL={rwtResult.coefficients.betaRL}, βW={rwtResult.coefficients.betaW}, βMPS={rwtResult.coefficients.betaMPS}, βSA={rwtResult.coefficients.betaSA}, β0={rwtResult.coefficients.beta0}
                   </span>
                 )}
               </div>
             </div>
+          </div>
           </div>
 
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-white/40 text-center">
             <button
               onClick={() => setShowResetModal(true)}
-              className="mb-8 inline-flex items-center gap-2 px-6 py-2.5 bg-white/80 hover:bg-white text-gray-700 font-semibold rounded-full shadow-sm border border-white/60 transition-all hover:scale-105"
+              className={`mb-8 inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
             >
               <RefreshCw size={18} /> {t.newSession}
             </button>
@@ -1108,6 +1295,30 @@ function MainApp() {
         confirmText={t.confirm}
         cancelText={t.cancel}
       />
+
+      {/* Restore Session Modal */}
+      <Modal 
+        show={showRestoreModal}
+        onClose={clearSessionMeasurements}
+        onConfirm={() => setShowRestoreModal(false)}
+        title={t.restoreSession}
+        description={t.restoreSessionDesc}
+        confirmText={t.keepData}
+        cancelText={t.resetData}
+        type="success"
+      />
+
+      {/* Age/Gender Change Session Prompt */}
+      <Modal 
+        show={showSessionPrompt}
+        onClose={() => setShowSessionPrompt(false)}
+        onConfirm={clearSessionMeasurements}
+        title={t.ageGenderChanged}
+        description={t.ageGenderChangedDesc}
+        confirmText={t.resetData}
+        cancelText={t.keepData}
+        type="danger"
+      />
     </div>
   );
 }
@@ -1133,11 +1344,12 @@ function RefreshCw({ size }: { size: number }) {
   );
 }
 
-function Modal({ show, onClose, onConfirm, title, confirmText, cancelText, type = 'danger' }: { 
+function Modal({ show, onClose, onConfirm, title, description, confirmText, cancelText, type = 'danger' }: { 
   show: boolean; 
   onClose: () => void; 
   onConfirm: () => void; 
   title: string; 
+  description?: string;
   confirmText: string; 
   cancelText: string;
   type?: 'danger' | 'success';
@@ -1156,16 +1368,17 @@ function Modal({ show, onClose, onConfirm, title, confirmText, cancelText, type 
             <Info size={32} />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
+          {description && <p className="text-sm text-gray-600 mb-4">{description}</p>}
           <div className="flex flex-col gap-2 mt-6">
             <button
               onClick={onConfirm}
-              className="w-full py-3 rounded-xl font-bold text-white transition-transform active:scale-95 bg-red-500 hover:bg-red-600"
+              className={`w-full py-3 rounded-xl font-bold text-white transition-transform active:scale-95 ${type === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}`}
             >
               {confirmText}
             </button>
             <button
               onClick={onClose}
-              className="w-full py-3 rounded-xl font-bold text-white transition-transform active:scale-95 bg-green-500 hover:bg-green-600"
+              className={`w-full py-3 rounded-xl font-bold text-white transition-transform active:scale-95 ${type === 'danger' ? 'bg-gray-400 hover:bg-gray-500' : 'bg-gray-400 hover:bg-gray-500'}`}
             >
               {cancelText}
             </button>
