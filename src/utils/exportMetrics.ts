@@ -1,7 +1,6 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { toPng } from 'html-to-image';
 
 // Better way is to just use html2canvas to capture the entire report DOM and put into jsPDF.
 
@@ -15,52 +14,6 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
-export async function exportPdf(
-  elementIdForReport: string,
-  patientName: string,
-  conclusions: string[],
-  t: any
-) {
-  try {
-    const reportEl = document.getElementById(elementIdForReport);
-    if (!reportEl) return;
-
-    // Create a clone to safely append conclusions without mutating React DOM
-    const clone = reportEl.cloneNode(true) as HTMLElement;
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.width = reportEl.offsetWidth + 'px'; // Ensure same layout width
-    document.body.appendChild(clone);
-
-    const conclusionsDiv = document.createElement('div');
-    conclusionsDiv.className = 'mt-8 p-4 bg-white/50 border border-gray-400 rounded-xl';
-    conclusionsDiv.innerHTML = `
-      <h3 class="font-bold text-lg mb-2 border-b border-gray-400 pb-2">Kết luận</h3>
-      ${conclusions.map(c => `<p class="text-sm mb-2 text-gray-800 font-medium text-justify">${c}</p>`).join('')}
-    `;
-    clone.appendChild(conclusionsDiv);
-
-    // Wait briefly for browser layout
-    await new Promise(resolve => setTimeout(resolve, 50));
-
-    const canvas = await html2canvas(clone, { scale: 2, useCORS: true, logging: false });
-    const imgData = canvas.toDataURL('image/png');
-    
-    document.body.removeChild(clone);
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`HexaPAH_Report_${patientName || 'Khach'}.pdf`);
-  } catch (error) {
-    console.error("Error exporting PDF:", error);
-    alert("Có lỗi xảy ra khi xuất PDF. Vui lòng thử lại.");
-  }
-}
-
 export async function exportDocx(
   elementIdForChart: string,
   patientData: any,
@@ -70,19 +23,16 @@ export async function exportDocx(
 ) {
   try {
     let chartImage: string | null = null;
-    const chartEl = document.getElementById(elementIdForChart);
-    if (chartEl) {
-      const clone = chartEl.cloneNode(true) as HTMLElement;
-      clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.width = chartEl.offsetWidth + 'px';
-      clone.style.height = chartEl.offsetHeight + 'px';
-      document.body.appendChild(clone);
-      await new Promise(resolve => setTimeout(resolve, 50));
-      const canvas = await html2canvas(clone, { scale: 2 });
-      chartImage = canvas.toDataURL('image/png');
-      document.body.removeChild(clone);
+    try {
+      const chartEl = document.getElementById(elementIdForChart);
+      if (chartEl) {
+        chartImage = await toPng(chartEl, { 
+          backgroundColor: '#ffffff',
+          pixelRatio: 2
+        });
+      }
+    } catch (chartErr) {
+      console.warn("Failed to capture chart image:", chartErr);
     }
 
     const doc = new Document({
@@ -108,13 +58,13 @@ export async function exportDocx(
         new Paragraph({
           children: [
             new TextRun({ text: 'Tên: ', bold: true }),
-            new TextRun(patientData.name || '---'),
+            new TextRun(String(patientData.name || '---')),
           ]
         }),
         new Paragraph({
           children: [
             new TextRun({ text: 'Giới tính: ', bold: true }),
-            new TextRun(patientData.genderStr),
+            new TextRun(String(patientData.genderStr || '')),
           ]
         }),
         new Paragraph({
@@ -132,26 +82,26 @@ export async function exportDocx(
         new Paragraph({
           children: [
             new TextRun({ text: 'Cân nặng: ', bold: true }),
-            new TextRun(`${patientData.weight} kg`),
+            new TextRun(`${patientData.weight || ''} kg`),
           ]
         }),
         new Paragraph({
           children: [
             new TextRun({ text: 'Tuổi xương: ', bold: true }),
-            new TextRun(`${patientData.effectiveBoneAge}`),
+            new TextRun(String(patientData.effectiveBoneAge || '')),
           ]
         }),
         new Paragraph({
           children: [
             new TextRun({ text: 'MPH: ', bold: true }),
-            new TextRun(`${patientData.mph} cm`),
+            new TextRun(`${patientData.mph || ''} cm`),
           ]
         }),
         
         new Paragraph({ text: '' }), // Spacing
 
         // Chart
-        ...(chartImage ? [
+        ...(chartImage && chartImage.includes('base64,') ? [
           new Paragraph({
             heading: HeadingLevel.HEADING_2,
             text: 'Biểu đồ kết quả'

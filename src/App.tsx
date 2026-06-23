@@ -5,7 +5,7 @@ import { calculateRWT, RWTCoefficient } from './data/rwt';
 import { bpTable } from './bpTable';
 import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { exportDocx, exportPdf } from './utils/exportMetrics';
+import { exportDocx } from './utils/exportMetrics';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
 
@@ -612,10 +612,6 @@ function MainApp() {
       mph: mph || '---'
     };
     exportDocx('hexapah-chart', patientData, {}, conclusions, t);
-  };
-
-  const handleExportPdf = () => {
-    exportPdf('hexapah-report', name, conclusions, t);
   };
 
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
@@ -1249,14 +1245,6 @@ function MainApp() {
             >
               <FileText size={18} className="mr-2" />
               Export DOCX
-            </button>
-            <button 
-              onClick={handleExportPdf}
-              className={`px-6 py-2.5 rounded-full transition-all shadow-sm border flex items-center font-bold ${gender === 'girl' ? 'bg-pink-50 hover:bg-pink-100/70 border-pink-200 text-pink-700' : 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-blue-700'}`}
-              title="Xuất kết quả file PDF"
-            >
-              <FileDown size={18} className="mr-2" />
-              Export PDF
             </button>
           </div>
 
