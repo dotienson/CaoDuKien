@@ -1,6 +1,6 @@
 export const translations = {
   vi: {
-    title: "HexaPAH - Dr. Sơn",
+    title: "PentaPAH - Bác sĩ Sơn",
     subtitle: "Dự đoán Chiều cao Chuyên sâu",
     subtitleNote: "BS. Đỗ Tiến Sơn - Bệnh viện Đa khoa Tâm Anh\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nUỷ viên Uỷ ban Đào tạo - Hội Nội tiết Nhi châu Âu",
     espeMember: "",
@@ -69,7 +69,7 @@ export const translations = {
     methodRWT: "Roche-Wainer-Thissen",
     methodAll: "Tất cả phương pháp",
     weight: "Cân nặng (kg)",
-    recumbentLength: "Chiều dài nằm (cm)",
+    recumbentLength: "Chiều dài nằm",
     actualWeight: "Cân nặng thực (kg)",
     noBoneAge: "Không có tuổi xương",
     noBoneAgeResult: "Trong lần khám này, trẻ chưa chụp Xquang tuổi xương.",
@@ -93,10 +93,29 @@ export const translations = {
       `* DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH\nBằng các thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pahBP}cm +/- 5cm (Bayley-Pinneau) và ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.`,
     resultTextTW1RWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string) => 
       `* DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH\nBằng các thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I) và ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.`,
-    generateBPSent: (pah: string, error: string, coeff: string) => `Phương pháp Bayley-Pinneau (PMID: 13014169), sử dụng hệ số: ${coeff}, dự đoán chiều cao trưởng thành là: ${pah} cm +/- ${error} cm.`,
-    generateTW1Sent: (pah: string, error: string, formula: string) => `Phương pháp Tanner-Whitehouse Mark I (TW1 - 1975), sử dụng hệ số: ${formula}, dự đoán chiều cao trưởng thành là: ${pah} cm +/- ${error} cm.`,
-    generateRWTSent: (pah: string, error: string, coeffs: string) => `Phương pháp Roche-Wainer-Thissen (PMID: 1168172), sử dụng hệ số: ${coeffs}, dự đoán chiều cao trưởng thành là: ${pah} cm +/- ${error} cm.`,
+    generateBPSent: (pah: string, error: string, coeff: string) => ({
+      methodName: 'Phương pháp Bayley-Pinneau',
+      midText: ` (PMID: 13014169), sử dụng hệ số: ${coeff}, dự đoán chiều cao trưởng thành là: `,
+      pah: pah,
+      error: error,
+      endText: ' cm.'
+    }),
+    generateTW1Sent: (pah: string, error: string, formula: string) => ({
+      methodName: 'Phương pháp Tanner-Whitehouse Mark I',
+      midText: ` (TW1 - 1975), sử dụng hệ số: ${formula}, dự đoán chiều cao trưởng thành là: `,
+      pah: pah,
+      error: error,
+      endText: ' cm.'
+    }),
+    generateRWTSent: (pah: string, error: string, coeffs: string) => ({
+      methodName: 'Phương pháp Roche-Wainer-Thissen',
+      midText: ` (PMID: 1168172), sử dụng hệ số: ${coeffs}, dự đoán chiều cao trưởng thành là: `,
+      pah: pah,
+      error: error,
+      endText: ' cm.'
+    }),
     newSession: "Phiên khám mới",
+    exportDocx: "Xuất báo cáo chi tiết",
     confirmReset: "Xác nhận xoá thông tin và tạo phiên khám mới?",
     confirm: "Xác nhận",
     cancel: "Hủy",
@@ -106,13 +125,19 @@ export const translations = {
     ageGenderChanged: "Thay đổi Thông tin cơ bản",
     ageGenderChangedDesc: "Bạn vừa thay đổi Tuổi hoặc Giới tính. Bạn có muốn tạo Phiên khám mới (xoá các số đo cũ) không?",
     resetData: "Tạo mới",
-    labelBoneXpert: "Kết quả từ BoneXpert",
+    labelBoneXpert: "BoneXpert PAH 3.1",
     labelAphv: "Đỉnh tăng cao (APHV)",
     examDatePrefix: "Ngày khám:",
-    generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => `Thuật toán BoneXpert AHP 3.1 (Visiana) dự đoán đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi, chiều cao trưởng thành khoảng ${bxPah || '...'} +/- ${bxErr || '...'} cm (tham chiếu AsiChi). `,
+    generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => ({
+      methodName: 'Thuật toán BoneXpert AHP 3.1',
+      midText: ` (Visiana) dự đoán đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi, chiều cao trưởng thành khoảng `,
+      pah: bxPah || '...',
+      error: bxErr || '...',
+      endText: ' cm (tham chiếu AsiChi).'
+    }),
   },
   en: {
-    title: "HexaPAH - Dr. Sơn",
+    title: "PentaPAH - Bác sĩ Sơn",
     subtitle: "Advanced Height Prediction",
     subtitleNote: "Dr. Do Tien Son - Tam Anh General Hospital\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nMember of the Training Committee - ESPE",
     espeMember: "",
@@ -181,7 +206,7 @@ export const translations = {
     methodRWT: "Roche-Wainer-Thissen",
     methodAll: "All methods",
     weight: "Weight (kg)",
-    recumbentLength: "Recumbent Length (cm)",
+    recumbentLength: "Recumbent Length",
     actualWeight: "Actual Weight (kg)",
     noBoneAge: "No Bone Age",
     selfDeclared: "Self-declared",
@@ -202,10 +227,29 @@ export const translations = {
       `* PREDICTED ADULT HEIGHT\nUsing multiple classic algorithms, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, bone age ~ ${boneAge} years) is: ${pahBP}cm +/- 5cm (Bayley-Pinneau) and ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive. TW1,2 and RWT methods are not applicable in this case.`,
     resultTextTW1RWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string) => 
       `* PREDICTED ADULT HEIGHT\nUsing multiple classic algorithms, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, bone age ~ ${boneAge} years) is: ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I) and ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive.`,
-    generateBPSent: (pah: string, error: string, coeff: string) => `Bayley-Pinneau method (PMID: 13014169), using coefficients: ${coeff}, predicts adult height: ${pah} cm +/- ${error} cm.`,
-    generateTW1Sent: (pah: string, error: string, formula: string) => `Tanner-Whitehouse Mark I method (TW1 - 1975), using coefficients: ${formula}, predicts adult height: ${pah} cm +/- ${error} cm.`,
-    generateRWTSent: (pah: string, error: string, coeffs: string) => `Roche-Wainer-Thissen method (PMID: 1168172), using coefficients: ${coeffs}, predicts adult height: ${pah} cm +/- ${error} cm.`,
+    generateBPSent: (pah: string, error: string, coeff: string) => ({
+      methodName: 'Bayley-Pinneau method',
+      midText: ` (PMID: 13014169), using coefficients: ${coeff}, predicts adult height: `,
+      pah: pah,
+      error: error,
+      endText: ' cm.'
+    }),
+    generateTW1Sent: (pah: string, error: string, formula: string) => ({
+      methodName: 'Tanner-Whitehouse Mark I method',
+      midText: ` (TW1 - 1975), using coefficients: ${formula}, predicts adult height: `,
+      pah: pah,
+      error: error,
+      endText: ' cm.'
+    }),
+    generateRWTSent: (pah: string, error: string, coeffs: string) => ({
+      methodName: 'Roche-Wainer-Thissen method',
+      midText: ` (PMID: 1168172), using coefficients: ${coeffs}, predicts adult height: `,
+      pah: pah,
+      error: error,
+      endText: ' cm.'
+    }),
     newSession: "New Session",
+    exportDocx: "Export Detailed Report",
     confirmReset: "Confirm clearing information and starting a new session?",
     confirm: "Confirm",
     cancel: "Cancel",
@@ -215,10 +259,16 @@ export const translations = {
     ageGenderChanged: "Basic Info Changed",
     ageGenderChangedDesc: "You just changed Age or Gender. Do you want to start a New Session (clear old measurements)?",
     resetData: "New Session",
-    labelBoneXpert: "BoneXpert AHP",
+    labelBoneXpert: "BoneXpert PAH 3.1",
     labelAphv: "Age at Peak Height Velocity (APHV)",
     examDatePrefix: "Exam date:",
-    generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => `BoneXpert AHP 3.1 (Visiana) algorithm predicts APHV at ${aphvX || '...'} years, adult height around ${bxPah || '...'} +/- ${bxErr || '...'} cm (AsiChi reference). `,
+    generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => ({
+      methodName: 'BoneXpert AHP 3.1',
+      midText: ` (Visiana) algorithm predicts APHV at ${aphvX || '...'} years, adult height around `,
+      pah: bxPah || '...',
+      error: bxErr || '...',
+      endText: ' cm (AsiChi reference).'
+    }),
   }
 };
 

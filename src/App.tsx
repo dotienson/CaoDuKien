@@ -6,6 +6,7 @@ import { bpTable } from './bpTable';
 import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { exportDocx } from './utils/exportMetrics';
+import { HeightPredictionChart } from './components/HeightPredictionChart';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
 
@@ -188,7 +189,6 @@ export default function App() {
                 <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
                   {t.title}
                 </h1>
-                <p className="text-gray-400 mt-2 text-sm font-medium">Secure Access Portal</p>
               </motion.div>
             </div>
             
@@ -239,15 +239,6 @@ export default function App() {
                 </span>
               </motion.button>
             </form>
-
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="text-center text-xs text-gray-500 mt-8"
-            >
-              {translations.vi.contactDoctor}
-            </motion.p>
           </div>
         </motion.div>
       </div>
@@ -564,7 +555,7 @@ function MainApp() {
 
   const genderStr = gender === 'boy' ? t.boy.toLowerCase() : t.girl.toLowerCase();
   
-  let conclusions: string[] = [];
+  let conclusions: any[] = [];
   let resultTextStr = '';
   if ((numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && ageYears !== '') {
     if (isBoneAgeDeviated) {
@@ -618,6 +609,26 @@ function MainApp() {
       conclusions.push(t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError));
     }
   }
+  
+  const chartData: any[] = [];
+  if (method === 'tw1' || method === 'both' || method === 'all') {
+    if (pahResult) {
+      chartData.push({ method: t.resultTW1, pah: Number(pahResult.pah), error: Number(pahResult.error), style: { lineDash: '', markerType: 'circle' as const } });
+    }
+  }
+  if (method === 'bp' || method === 'both' || method === 'all') {
+    if (bpResult) {
+      chartData.push({ method: t.resultBP, pah: Number(bpResult.pah), error: Number(bpResult.error), style: { lineDash: '4,4', markerType: 'square' as const } });
+    }
+  }
+  if (method === 'rwt' || method === 'all') {
+    if (rwtResult) {
+      chartData.push({ method: t.resultRWT, pah: Number(rwtResult.pah), error: Number(rwtResult.error), style: { lineDash: '2,2', markerType: 'triangle' as const } });
+    }
+  }
+  if (boneXpertPah && boneXpertError) {
+    chartData.push({ method: t.labelBoneXpert, pah: Number(boneXpertPah.replace(',', '.')), error: Number(boneXpertError.replace(',', '.')), style: { lineDash: '8,4,2,4', markerType: 'star' as const } });
+  }
 
   const handleReset = () => {
     setName('');
@@ -661,7 +672,7 @@ function MainApp() {
       effectiveBoneAge,
       mph: mph || '---'
     };
-    exportDocx(patientData, {}, conclusions, t);
+    exportDocx(patientData, { chartData }, conclusions, t);
   };
 
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
@@ -735,18 +746,22 @@ function MainApp() {
         <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:p-10">
           
           {/* Header */}
-          <div className="text-center mb-8 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">{t.title}</h1>
-            <p className="text-gray-600 font-medium mt-1">{t.subtitle}</p>
-            <p className="text-xs text-gray-500 mt-2 whitespace-pre-line leading-relaxed">
-              {t.subtitleNote}
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8 border-b border-gray-200/50 pb-6">
+            <div className="md:col-span-7">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">{t.title}</h1>
+              <p className="text-gray-600 font-medium mt-1">{t.subtitle}</p>
+            </div>
+            <div className="md:col-span-5 md:text-right flex flex-col justify-center">
+              <p className="text-xs text-gray-500 whitespace-pre-line leading-relaxed opacity-80">
+                {t.subtitleNote}
+              </p>
+            </div>
           </div>
 
           {/* Form Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-8">
             {/* Left Column */}
-            <div className="space-y-5">
+            <div className="space-y-5 md:col-span-5">
               <div>
                 <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.name}</label>
                 <input type="text" value={name} onChange={e => {
@@ -830,11 +845,11 @@ function MainApp() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.weight} <span className="text-xs font-normal opacity-70">(opt)</span></label>
+                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.weight}</label>
                   <input type="text" inputMode="decimal" value={weight} onChange={e => setWeight(e.target.value.replace(',', '.'))} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
                 </div>
                 <div>
-                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.recumbentLength} <span className="text-xs font-normal opacity-70">(opt)</span></label>
+                  <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.recumbentLength}</label>
                   <input type="text" inputMode="decimal" value={recumbentLength} onChange={e => setRecumbentLength(e.target.value.replace(',', '.'))} placeholder={numCurrentHeight ? String(numCurrentHeight + 1.25) : ''} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all shadow-sm ${theme.inputBorder}`} />
                   {numRecumbentLength !== '' && numCurrentHeight !== '' && Number(numRecumbentLength) < Number(numCurrentHeight) && <p className="text-xs text-red-500 mt-1.5">Chiều dài nằm không hợp lệ</p>}
                 </div>
@@ -843,7 +858,7 @@ function MainApp() {
             </div>
 
             {/* Right Column */}
-            <div className="space-y-5">
+            <div className="space-y-5 md:col-span-7">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.fatherHeight}</label>
@@ -859,7 +874,7 @@ function MainApp() {
               
               <div className={`${theme.cardBg} p-3 rounded-xl border ${theme.cardBorder} text-sm flex justify-between items-center shadow-sm`}>
                 <span className={`font-medium ${theme.labelDark}`}>{t.mph}:</span>
-                <span className={`font-bold text-lg ${theme.labelDark}`}>{mph} cm <span className={`text-xs font-normal opacity-70`}>(+/- 8.5cm)</span></span>
+                <span className={`font-bold text-lg ${theme.labelDark}`}>{mph} cm <span className={`text-xs font-normal opacity-70`}>(+/- 8.5)</span></span>
               </div>
 
               {gender === 'girl' && (
@@ -883,7 +898,7 @@ function MainApp() {
               )}
 
               <div className={`${theme.cardBg} p-4 rounded-2xl border ${theme.cardBorder} shadow-sm`}>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 mb-2">
                   <label className={`block text-sm ${theme.labelDark}`}>{t.boneAge}</label>
                   <a href="https://ba-drson.vercel.app" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-1 text-xs font-medium ${primaryColor} hover:underline`}>
                     <ExternalLink size={12} /> {t.openAtlas}
@@ -891,7 +906,7 @@ function MainApp() {
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1 space-y-4">
-                    <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} disabled={noBoneAge && canUseNoBoneAge} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all font-bold text-lg disabled:opacity-50 shadow-sm ${theme.inputBorder}`} placeholder={t.egBoneAge} />
+                    <input type="text" inputMode="decimal" value={boneAge} onChange={e => setBoneAge(e.target.value.replace(',', '.'))} disabled={noBoneAge && canUseNoBoneAge} className={`w-full px-4 py-2 rounded-xl border bg-white outline-none transition-all font-bold text-lg disabled:opacity-50 shadow-sm ${theme.inputBorder}`} />
                     
                     {canUseNoBoneAge && (
                       <div className="flex items-center gap-2">
@@ -900,26 +915,21 @@ function MainApp() {
                       </div>
                     )}
                     
-                    <div>
-                      <label className={`block text-xs ${theme.labelMedium} mb-1.5`}>{t.interpretingDoctor}</label>
-                      <input type="text" value={doctor} onChange={e => setDoctor(e.target.value)} className={`w-full px-4 py-1.5 rounded-lg border bg-white text-sm outline-none shadow-sm ${theme.inputBorder}`} />
-                    </div>
-                    
-                    <div className={`bg-white/80 p-3 rounded-xl border ${theme.cardBorder} shadow-sm mt-4`}>
+                    <div className="bg-blue-50/80 p-3 rounded-xl border border-blue-200 shadow-sm mt-4">
                       <div className="flex items-center gap-1 mb-2">
-                        <label className={`text-sm ${theme.labelDark} font-bold`}>{t.labelBoneXpert}</label>
-                        <a href="https://bonexpert.com/ahp/" target="_blank" rel="noopener noreferrer" className={`${theme.labelMedium} hover:opacity-80 transition-colors`} title="BoneXpert AHP">
+                        <label className="text-sm text-blue-700 font-bold">{t.labelBoneXpert}</label>
+                        <a href="https://bonexpert.com/ahp/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-colors" title="BoneXpert AHP">
                           <ExternalLink size={14} />
                         </a>
                       </div>
                       <div className="flex items-center gap-2 mb-3">
-                        <input type="text" inputMode="decimal" value={boneXpertPah} onChange={e => setBoneXpertPah(e.target.value.replace(',', '.'))} placeholder="..." className={`flex-1 px-3 py-1.5 rounded-lg border focus:ring-2 bg-white text-sm outline-none text-center transition-all ${theme.inputBorder}`} />
-                        <span className={`text-sm ${theme.labelMedium} font-bold`}>+/-</span>
-                        <input type="text" inputMode="decimal" value={boneXpertError} onChange={e => setBoneXpertError(e.target.value.replace(',', '.'))} placeholder="cm" className={`w-16 px-2 py-1.5 rounded-lg border focus:ring-2 bg-white text-sm outline-none text-center transition-all ${theme.inputBorder}`} />
+                        <input type="text" inputMode="decimal" value={boneXpertPah} onChange={e => setBoneXpertPah(e.target.value.replace(',', '.'))} placeholder="..." className="flex-1 px-3 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none text-center transition-all placeholder-blue-300" />
+                        <span className="text-sm text-blue-700 font-bold">+/-</span>
+                        <input type="text" inputMode="decimal" value={boneXpertError} onChange={e => setBoneXpertError(e.target.value.replace(',', '.'))} placeholder="..." className="w-16 px-2 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none text-center transition-all placeholder-blue-300" />
                       </div>
                       <div>
-                        <label className={`block text-xs ${theme.labelMedium} font-semibold mb-1.5`}>{t.labelAphv}</label>
-                        <input type="text" inputMode="decimal" value={aphv} onChange={e => setAphv(e.target.value.replace(',', '.'))} placeholder="..." className={`w-full px-3 py-1.5 rounded-lg border focus:ring-2 bg-white text-sm outline-none transition-all ${theme.inputBorder}`} />
+                        <label className="block text-xs text-blue-700 font-semibold mb-1.5">{t.labelAphv}</label>
+                        <input type="text" inputMode="decimal" value={aphv} onChange={e => setAphv(e.target.value.replace(',', '.'))} placeholder="..." className="w-full px-3 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none transition-all placeholder-blue-300" />
                       </div>
                     </div>
                     
@@ -972,7 +982,7 @@ function MainApp() {
                               <span className="text-4xl font-bold">{rwtResult.pah}</span>
                               <span className="text-sm">cm</span>
                             </div>
-                            <div className="text-xs opacity-80 mt-1">{t.resultRWT} (+/- {rwtResult.error} cm)</div>
+                            <div className="text-xs opacity-80 mt-1">{t.resultRWT} (+/- {rwtResult.error})</div>
                           </>
                         ) : (
                           <>
@@ -990,7 +1000,7 @@ function MainApp() {
                                 <span className="text-2xl font-bold">{pahResult.pah}</span>
                                 <span className="text-xs">cm</span>
                               </div>
-                              <div className="text-[10px] opacity-80 mt-1">{t.resultTW1} (+/- {pahResult.error} cm)</div>
+                              <div className="text-[10px] opacity-80 mt-1">{t.resultTW1} (+/- {pahResult.error})</div>
                             </div>
                           ) : (
                             <div className="text-center">
@@ -1006,7 +1016,7 @@ function MainApp() {
                                 <span className="text-2xl font-bold">{bpResult.pah}</span>
                                 <span className="text-xs">cm</span>
                               </div>
-                              <div className="text-[10px] opacity-80 mt-1">{t.resultBP} (+/- {bpResult.error} cm)</div>
+                              <div className="text-[10px] opacity-80 mt-1">{t.resultBP} (+/- {bpResult.error})</div>
                             </div>
                           ) : (
                             <div className="text-center">
@@ -1025,7 +1035,7 @@ function MainApp() {
                                 <span className="text-xl font-bold">{pahResult.pah}</span>
                                 <span className="text-[10px]">cm</span>
                               </div>
-                              <div className="text-[10px] opacity-80">{t.resultTW1} (+/- {pahResult.error} cm)</div>
+                              <div className="text-[10px] opacity-80">{t.resultTW1} (+/- {pahResult.error})</div>
                             </div>
                           ) : (
                             <div className="text-center">
@@ -1041,7 +1051,7 @@ function MainApp() {
                                 <span className="text-xl font-bold">{bpResult.pah}</span>
                                 <span className="text-[10px]">cm</span>
                               </div>
-                              <div className="text-[10px] opacity-80">{t.resultBP} (+/- {bpResult.error} cm)</div>
+                              <div className="text-[10px] opacity-80">{t.resultBP} (+/- {bpResult.error})</div>
                             </div>
                           ) : (
                             <div className="text-center">
@@ -1057,7 +1067,7 @@ function MainApp() {
                                 <span className="text-xl font-bold">{rwtResult.pah}</span>
                                 <span className="text-[10px]">cm</span>
                               </div>
-                              <div className="text-[10px] opacity-80">{t.resultRWT} (+/- {rwtResult.error} cm)</div>
+                              <div className="text-[10px] opacity-80">{t.resultRWT} (+/- {rwtResult.error})</div>
                             </div>
                           ) : (
                             <div className="text-center">
@@ -1075,7 +1085,7 @@ function MainApp() {
                               <span className="text-4xl font-bold">{(method === 'tw1' ? pahResult : method === 'bp' ? bpResult : rwtResult)?.pah}</span>
                               <span className="text-sm">cm</span>
                             </div>
-                            <div className="text-xs opacity-80 mt-1">{method === 'tw1' ? t.resultTW1 : method === 'bp' ? t.resultBP : t.resultRWT} (+/- {(method === 'tw1' ? pahResult : method === 'bp' ? bpResult : rwtResult)?.error} cm)</div>
+                            <div className="text-xs opacity-80 mt-1">{method === 'tw1' ? t.resultTW1 : method === 'bp' ? t.resultBP : t.resultRWT} (+/- {(method === 'tw1' ? pahResult : method === 'bp' ? bpResult : rwtResult)?.error})</div>
                           </div>
                         ) : invalidAgeError ? (
                           <span className="text-sm font-bold mt-2 text-center">{t.invalidAge}</span>
@@ -1286,26 +1296,24 @@ function MainApp() {
           </div>
           </div>
           
-          {/* Export Actions */}
-          <div className="flex justify-center flex-wrap gap-4 mt-8 mb-4">
-            <button 
-              onClick={handleExportDocx}
-              className={`px-6 py-2.5 rounded-full transition-all shadow-sm border flex items-center font-bold ${gender === 'girl' ? 'bg-pink-50 hover:bg-pink-100/70 border-pink-200 text-pink-700' : 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-blue-700'}`}
-              title="Xuất kết quả file DOCX"
-            >
-              <FileText size={18} className="mr-2" />
-              Export DOCX
-            </button>
-          </div>
-
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-white/40 text-center">
-            <button
-              onClick={() => setShowResetModal(true)}
-              className={`mb-8 inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
-            >
-              <RefreshCw size={18} /> {t.newSession}
-            </button>
+            <div className="flex justify-center flex-wrap gap-4 mb-8">
+              <button
+                onClick={() => setShowResetModal(true)}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
+              >
+                <RefreshCw size={18} /> {t.newSession}
+              </button>
+              <button 
+                onClick={handleExportDocx}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 ${gender === 'girl' ? 'bg-pink-50 hover:bg-pink-100/70 border-pink-200 text-pink-700' : 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-blue-700'}`}
+                title={t.exportDocx}
+              >
+                <FileText size={18} />
+                {t.exportDocx}
+              </button>
+            </div>
 
             <p className="text-xs text-gray-500 mb-4">{t.footerText}</p>
             
