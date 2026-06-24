@@ -3,9 +3,10 @@ import { translations, Language } from './i18n';
 import { Gender, MenarcheStatus, getCoefficients, calculatePAH, calculateMPH, Coefficients } from './data/twmc';
 import { calculateRWT, RWTCoefficient } from './data/rwt';
 import { bpTable } from './bpTable';
-import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } from 'lucide-react';
+import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { exportDocx } from './utils/exportMetrics';
+import html2canvas from 'html2canvas';
 import { HeightPredictionChart } from './components/HeightPredictionChart';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
@@ -189,84 +190,44 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] relative overflow-hidden font-inter selection:bg-indigo-500/30">
-        {/* Background effects */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/20 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-500/10 blur-[150px] rounded-full pointer-events-none" />
-        
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative z-10 w-full max-w-sm mx-4"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="w-full max-w-[350px] mx-4"
         >
-          <div className="bg-white/[0.03] backdrop-blur-2xl p-10 rounded-[2rem] shadow-2xl border border-white/10 relative overflow-hidden">
-            {/* Inner highlight */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="bg-white px-10 pt-10 pb-8 border border-gray-300 flex flex-col items-center">
             
-            <div className="text-center mb-10">
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-6 shadow-xl shadow-indigo-500/20">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                </div>
-                <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
-                  {t.title}
-                </h1>
-              </motion.div>
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                PentaPAH - Dr. Sơn
+              </h1>
             </div>
             
-            <form onSubmit={handleLogin} className="space-y-8">
-              <div className="flex flex-col items-center">
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="relative group"
-                >
-                  <input 
-                    type="password" 
-                    placeholder="***"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
-                    className="w-48 px-4 py-4 rounded-2xl border border-white/10 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none bg-black/40 text-white placeholder-gray-600/50 text-center text-3xl tracking-[0.5em] transition-all duration-300 shadow-inner peer"
-                    style={{ fontFamily: 'monospace' }}
-                  />
-                  {/* Input glow */}
-                  <div className="absolute inset-0 -z-10 bg-indigo-500/20 blur-xl opacity-0 transition-opacity duration-300 peer-focus:opacity-100 rounded-2xl pointer-events-none" />
-                </motion.div>
+            <form onSubmit={handleLogin} className="w-full space-y-3">
+              <div className="w-full">
+                <input 
+                  type="password" 
+                  placeholder="Mã truy cập"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-2 py-2.5 rounded-sm border border-gray-300 focus:border-gray-400 bg-gray-50 outline-none text-gray-900 text-xs transition-colors"
+                />
               </div>
 
               {loginError && (
-                <motion.p 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-rose-400 text-sm text-center bg-rose-500/10 py-2.5 rounded-xl border border-rose-500/20 font-medium"
-                >
+                <p className="text-red-500 text-sm text-center my-3">
                   {loginError}
-                </motion.p>
+                </p>
               )}
 
-              <motion.button 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
+              <button 
                 type="submit"
-                className="group relative w-full bg-white text-black font-semibold py-3.5 rounded-xl transition-all overflow-hidden"
+                className="w-full bg-[#0095f6] hover:bg-[#1877f2] text-white font-semibold py-2 rounded-lg text-sm transition-colors mt-2"
               >
-                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-gray-200 to-white opacity-0 transition-opacity group-hover:opacity-100" />
-                <span className="relative flex items-center justify-center gap-2">
-                  {translations.vi.login}
-                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </span>
-              </motion.button>
+                {translations.vi.login}
+              </button>
             </form>
           </div>
         </motion.div>
@@ -706,6 +667,26 @@ function MainApp() {
     exportDocx(patientData, { chartData }, conclusions, t);
   };
 
+  const handleDownloadChart = async () => {
+    const chartElement = document.getElementById('hexapah-chart');
+    if (!chartElement) return;
+    
+    try {
+      const canvas = await html2canvas(chartElement, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+      
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `PentaPAH_Chart_${name || 'patient'}.png`;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export chart image', err);
+    }
+  };
+
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
   const bgGradient = gender === 'girl' ? 'from-pink-100 via-rose-50 to-pink-200' : 'from-blue-100 via-sky-50 to-blue-200';
   const primaryColor = gender === 'girl' ? 'text-pink-600' : 'text-blue-600';
@@ -786,11 +767,11 @@ function MainApp() {
           
           {/* Header */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8 border-b border-gray-200/50 pb-6">
-            <div className="md:col-span-7">
+            <div className="md:col-span-7 text-center md:text-left">
               <h1 className={`text-2xl md:text-3xl font-bold tracking-tight ${primaryColor}`}>{t.title}</h1>
               <p className={`font-medium mt-1 ${primaryColor} opacity-80`}>{t.subtitle}</p>
             </div>
-            <div className="md:col-span-5 md:text-right flex flex-col justify-center">
+            <div className="md:col-span-5 md:text-right text-center flex flex-col justify-center">
               <p className={`text-xs whitespace-pre-line leading-relaxed opacity-80 ${primaryColor}`}>
                 {t.subtitleNote}
               </p>
@@ -1200,8 +1181,17 @@ function MainApp() {
             )}
 
             {/* Chart Section */}
-            <div className="mt-10 pt-8 border-t border-white/40">
-              <div id="hexapah-chart" className="relative w-full max-w-md mx-auto h-72 border-l-2 border-b-2 border-gray-400 flex items-end justify-around pb-0 px-2 md:px-8 mb-12 bg-white/50 rounded-tr-lg">
+            <div className="mt-10 pt-8 border-t border-white/40 relative">
+              <div className="absolute right-0 top-10 flex space-x-2 z-30" data-html2canvas-ignore="true">
+                <button 
+                  onClick={handleDownloadChart}
+                  className="p-2 rounded-lg transition-colors bg-white hover:bg-gray-50 text-gray-500 shadow-sm border border-gray-200"
+                  title={t.downloadChart}
+                >
+                  <Download size={16} />
+                </button>
+              </div>
+              <div id="hexapah-chart" className="relative w-full max-w-md mx-auto h-72 border-l-2 border-b-2 border-gray-400 flex items-end justify-around pb-0 px-2 md:px-8 mb-12 bg-white/50 rounded-tr-lg pt-4">
               {/* Y-axis labels */}
               <div className="absolute left-1 bottom-0 text-[10px] text-gray-400 font-mono">{chartMin}</div>
               <div className="absolute left-1 top-0 text-[10px] text-gray-400 font-mono">{chartMax}</div>
@@ -1309,53 +1299,7 @@ function MainApp() {
               )}
             </div>
             
-            <div className="flex justify-center mt-2 mb-0">
-              <button
-                onClick={() => setShowLegend(!showLegend)}
-                className="text-xs font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
-              >
-                {t.legendAndCoeffs}
-                {showLegend ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-            </div>
-
-            {showLegend && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="text-xs text-gray-500 text-center max-w-2xl mx-auto bg-gray-50 p-3 rounded-xl border border-gray-100"
-              >
-                <div className="md:space-y-1">
-                  {t.pahLegend && <span className="md:block">{t.pahLegend} </span>}
-                  <span className="md:block">{t.mphLegend} </span>
-                  <span className="italic md:block">{t.illustrationNote} </span>
-                  <span className="italic md:block">
-                    {gender === 'girl' ? t.vnAvgFemale : t.vnAvgMale}
-                  </span>
-                  {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
-                    <span className="italic md:block">
-                      {t.tw1Formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}{' '}
-                    </span>
-                  )}
-                  {bpResult && (
-                    <span className="italic md:block">
-                      {t.bpCoeff}: {bpResult.fraction}
-                    </span>
-                  )}
-                  {rwtResult && (
-                    <span className="italic md:block">
-                      RWT Coeffs: βRL={rwtResult.coefficients.betaRL}, βW={rwtResult.coefficients.betaW}, βMPS={rwtResult.coefficients.betaMPS}, βSA={rwtResult.coefficients.betaSA}, β0={rwtResult.coefficients.beta0}
-                    </span>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </div>
-          </div>
-          
-          {/* Footer */}
-          <div className="mt-4 pt-4 border-t border-white/40 text-center">
-            <div className="flex justify-center flex-wrap gap-4 mb-4">
+            <div className="flex justify-center flex-wrap gap-4 mt-8 mb-4">
               <button
                 onClick={() => setShowResetModal(true)}
                 className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
@@ -1364,23 +1308,71 @@ function MainApp() {
               </button>
               <button 
                 onClick={handleExportDocx}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 ${gender === 'girl' ? 'bg-pink-50 hover:bg-pink-100/70 border-pink-200 text-pink-700' : 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-blue-700'}`}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-red-50 hover:bg-red-100/70 border-red-200 text-red-700`}
                 title={t.exportDocx}
               >
                 <FileText size={18} />
                 {t.exportDocx}
               </button>
             </div>
-            
-            <div className="inline-block text-left">
+
+          </div>
+          </div>
+          
+          {/* Footer */}
+          <div className="mt-4 pt-4 border-t border-gray-200/50 text-center">
+            <div className="flex justify-center gap-6 mb-4">
+              <button 
+                onClick={() => setShowLegend(!showLegend)}
+                className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Info size={14} /> {t.legendAndCoeffs} {showLegend ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
               <button 
                 onClick={() => setShowNote(!showNote)}
-                className="flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-gray-900 transition-colors mx-auto mb-2"
+                className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <Info size={14} /> {t.noteTitle} {showNote ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
-              
+            </div>
+            
+            <div className="w-full">
               <AnimatePresence>
+                {showLegend && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden mb-4"
+                  >
+                    <div className="text-xs text-gray-500 text-center max-w-2xl mx-auto bg-gray-50 p-3 rounded-xl border border-gray-100">
+                      <div className="md:space-y-1">
+                        {t.pahLegend && <span className="md:block">{t.pahLegend} </span>}
+                        <span className="md:block">{t.mphLegend} </span>
+                        <span className="italic md:block">{t.illustrationNote} </span>
+                        <span className="italic md:block">
+                          {gender === 'girl' ? t.vnAvgFemale : t.vnAvgMale}
+                        </span>
+                        {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
+                          <span className="italic md:block">
+                            {t.tw1Formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}{' '}
+                          </span>
+                        )}
+                        {bpResult && (
+                          <span className="italic md:block">
+                            {t.bpCoeff}: {bpResult.fraction}
+                          </span>
+                        )}
+                        {rwtResult && (
+                          <span className="italic md:block">
+                            RWT Coeffs: βRL={rwtResult.coefficients.betaRL}, βW={rwtResult.coefficients.betaW}, βMPS={rwtResult.coefficients.betaMPS}, βSA={rwtResult.coefficients.betaSA}, β0={rwtResult.coefficients.beta0}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
                 {showNote && (
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
