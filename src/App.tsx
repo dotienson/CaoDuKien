@@ -141,6 +141,35 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      // Auto logout after 5 minutes (300000 ms)
+      timeoutId = setTimeout(() => {
+        setIsLoggedIn(false);
+        localStorage.removeItem('hexaPahAuth');
+      }, 5 * 60 * 1000);
+    };
+
+    if (isLoggedIn) {
+      resetTimer();
+      window.addEventListener('mousemove', resetTimer);
+      window.addEventListener('keydown', resetTimer);
+      window.addEventListener('click', resetTimer);
+      window.addEventListener('scroll', resetTimer);
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('click', resetTimer);
+      window.removeEventListener('scroll', resetTimer);
+    };
+  }, [isLoggedIn]);
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password.endsWith('12')) {
@@ -148,7 +177,7 @@ export default function App() {
       try {
         localStorage.setItem('hexaPahAuth', JSON.stringify({
           isLoggedIn: true,
-          expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+          expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes (initial)
         }));
       } catch (e) {
         console.warn('Failed to set auth localStorage');
@@ -284,6 +313,7 @@ function MainApp() {
   const [aphv, setAphv] = useState('');
 
   const [showNote, setShowNote] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [showSessionPrompt, setShowSessionPrompt] = useState(false);
@@ -728,7 +758,7 @@ function MainApp() {
       <div className="max-w-4xl mx-auto">
         
         {/* Header Controls */}
-        <div className="flex justify-end mb-4 gap-2">
+        <div className="flex justify-end mb-4 gap-2 items-center">
           <button 
             onClick={() => setLang('vi')}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${lang === 'vi' ? primaryBg + ' text-white' : 'bg-white/50 text-gray-600'}`}
@@ -741,6 +771,14 @@ function MainApp() {
           >
             EN
           </button>
+          <a 
+            href="https://tw2-drson.vercel.app/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="inline-flex items-center justify-center px-3 py-1.5 bg-white/50 hover:bg-white/70 text-gray-600 text-xs font-medium rounded-full transition-colors ml-2"
+          >
+            {t.useTW2}
+          </a>
         </div>
 
         {/* Main Content to Export */}
@@ -749,11 +787,11 @@ function MainApp() {
           {/* Header */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8 border-b border-gray-200/50 pb-6">
             <div className="md:col-span-7">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">{t.title}</h1>
-              <p className="text-gray-600 font-medium mt-1">{t.subtitle}</p>
+              <h1 className={`text-2xl md:text-3xl font-bold tracking-tight ${primaryColor}`}>{t.title}</h1>
+              <p className={`font-medium mt-1 ${primaryColor} opacity-80`}>{t.subtitle}</p>
             </div>
             <div className="md:col-span-5 md:text-right flex flex-col justify-center">
-              <p className="text-xs text-gray-500 whitespace-pre-line leading-relaxed opacity-80">
+              <p className={`text-xs whitespace-pre-line leading-relaxed opacity-80 ${primaryColor}`}>
                 {t.subtitleNote}
               </p>
             </div>
@@ -916,23 +954,25 @@ function MainApp() {
                       </div>
                     )}
                     
-                    <div className="bg-blue-50/80 p-3 rounded-xl border border-blue-200 shadow-sm mt-4">
-                      <div className="flex items-center gap-1 mb-2">
-                        <label className="text-sm text-blue-700 font-bold">{t.labelBoneXpert}</label>
-                        <a href="https://bonexpert.com/ahp/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-colors" title="BoneXpert AHP">
-                          <ExternalLink size={14} />
-                        </a>
+                    {!(noBoneAge && canUseNoBoneAge) && (
+                      <div className="bg-blue-50/80 p-3 rounded-xl border border-blue-200 shadow-sm mt-4">
+                        <div className="flex items-center gap-1 mb-2">
+                          <label className="text-sm text-blue-700 font-bold">{t.labelBoneXpert}</label>
+                          <a href="https://bonexpert.com/ahp/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-colors" title="BoneXpert AHP">
+                            <ExternalLink size={14} />
+                          </a>
+                        </div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <input type="text" inputMode="decimal" value={boneXpertPah} onChange={e => setBoneXpertPah(e.target.value.replace(',', '.'))} placeholder="..." className="flex-1 px-3 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none text-center transition-all placeholder-blue-300" />
+                          <span className="text-sm text-blue-700 font-bold">+/-</span>
+                          <input type="text" inputMode="decimal" value={boneXpertError} onChange={e => setBoneXpertError(e.target.value.replace(',', '.'))} placeholder="..." className="w-16 px-2 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none text-center transition-all placeholder-blue-300" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-blue-700 font-semibold mb-1.5">{t.labelAphv}</label>
+                          <input type="text" inputMode="decimal" value={aphv} onChange={e => setAphv(e.target.value.replace(',', '.'))} placeholder="..." className="w-full px-3 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none transition-all placeholder-blue-300" />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <input type="text" inputMode="decimal" value={boneXpertPah} onChange={e => setBoneXpertPah(e.target.value.replace(',', '.'))} placeholder="..." className="flex-1 px-3 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none text-center transition-all placeholder-blue-300" />
-                        <span className="text-sm text-blue-700 font-bold">+/-</span>
-                        <input type="text" inputMode="decimal" value={boneXpertError} onChange={e => setBoneXpertError(e.target.value.replace(',', '.'))} placeholder="..." className="w-16 px-2 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none text-center transition-all placeholder-blue-300" />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-blue-700 font-semibold mb-1.5">{t.labelAphv}</label>
-                        <input type="text" inputMode="decimal" value={aphv} onChange={e => setAphv(e.target.value.replace(',', '.'))} placeholder="..." className="w-full px-3 py-1.5 rounded-lg border border-blue-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white text-sm text-blue-900 outline-none transition-all placeholder-blue-300" />
-                      </div>
-                    </div>
+                    )}
                     
                     <div>
                       <DateInput label={t.xrayDate} value={xrayDate} onChange={setXrayDate} className={theme.inputBorder} />
@@ -1269,37 +1309,53 @@ function MainApp() {
               )}
             </div>
             
-            <div className="text-xs text-gray-500 text-center max-w-2xl mx-auto mt-4">
-              <div className="md:space-y-1">
-                {t.pahLegend && <span className="md:block">{t.pahLegend} </span>}
-                <span className="md:block">{t.mphLegend} </span>
-                <span className="italic md:block">{t.illustrationNote} </span>
-                <span className="italic md:block">
-                  {gender === 'girl' ? t.vnAvgFemale : t.vnAvgMale}
-                </span>
-                {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
-                  <span className="italic md:block">
-                    {t.tw1Formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}{' '}
-                  </span>
-                )}
-                {bpResult && (
-                  <span className="italic md:block">
-                    {t.bpCoeff}: {bpResult.fraction}
-                  </span>
-                )}
-                {rwtResult && (
-                  <span className="italic md:block">
-                    RWT Coeffs: βRL={rwtResult.coefficients.betaRL}, βW={rwtResult.coefficients.betaW}, βMPS={rwtResult.coefficients.betaMPS}, βSA={rwtResult.coefficients.betaSA}, β0={rwtResult.coefficients.beta0}
-                  </span>
-                )}
-              </div>
+            <div className="flex justify-center mt-2 mb-0">
+              <button
+                onClick={() => setShowLegend(!showLegend)}
+                className="text-xs font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
+              >
+                {t.legendAndCoeffs}
+                {showLegend ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
             </div>
+
+            {showLegend && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="text-xs text-gray-500 text-center max-w-2xl mx-auto bg-gray-50 p-3 rounded-xl border border-gray-100"
+              >
+                <div className="md:space-y-1">
+                  {t.pahLegend && <span className="md:block">{t.pahLegend} </span>}
+                  <span className="md:block">{t.mphLegend} </span>
+                  <span className="italic md:block">{t.illustrationNote} </span>
+                  <span className="italic md:block">
+                    {gender === 'girl' ? t.vnAvgFemale : t.vnAvgMale}
+                  </span>
+                  {usedCoeffs && numCurrentHeight && ageYears !== '' && numBoneAge !== '' && !noDataError && !invalidAgeError && (
+                    <span className="italic md:block">
+                      {t.tw1Formula}: (Height × {usedCoeffs.alpha}) + (Age × {usedCoeffs.beta}) + (Bone Age × {usedCoeffs.gamma}) + {usedCoeffs.c}{' '}
+                    </span>
+                  )}
+                  {bpResult && (
+                    <span className="italic md:block">
+                      {t.bpCoeff}: {bpResult.fraction}
+                    </span>
+                  )}
+                  {rwtResult && (
+                    <span className="italic md:block">
+                      RWT Coeffs: βRL={rwtResult.coefficients.betaRL}, βW={rwtResult.coefficients.betaW}, βMPS={rwtResult.coefficients.betaMPS}, βSA={rwtResult.coefficients.betaSA}, β0={rwtResult.coefficients.beta0}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </div>
           </div>
           
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-white/40 text-center">
-            <div className="flex justify-center flex-wrap gap-4 mb-8">
+          <div className="mt-4 pt-4 border-t border-white/40 text-center">
+            <div className="flex justify-center flex-wrap gap-4 mb-4">
               <button
                 onClick={() => setShowResetModal(true)}
                 className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
@@ -1315,8 +1371,6 @@ function MainApp() {
                 {t.exportDocx}
               </button>
             </div>
-
-            <p className="text-xs text-gray-500 mb-4">{t.footerText}</p>
             
             <div className="inline-block text-left">
               <button 
@@ -1334,31 +1388,17 @@ function MainApp() {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="bg-yellow-50/80 border border-yellow-200 p-3 rounded-xl text-xs text-yellow-800 max-w-xl mx-auto mb-4">
+                    <div className="bg-yellow-50/80 border border-yellow-200 p-3 rounded-xl text-xs text-yellow-800 max-w-xl mx-auto mb-4 text-justify">
                       {t.noteContent}
+                      <div className="mt-2 pt-2 border-t border-yellow-200/50">
+                        {t.footerText}
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-            
-            <div className="mt-2 flex flex-col items-center gap-3">
-              <a href="https://dotienson.com/app" target="_blank" rel="noopener noreferrer" className={`text-sm font-medium hover:underline ${primaryColor}`}>
-                {t.link}
-              </a>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                <a 
-                  href="https://tw2-drson.vercel.app/" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#C05621] hover:bg-[#9C4221] text-white text-xs font-medium rounded-full shadow-sm transition-colors"
-                >
-                  {t.useTW2}
-                </a>
-              </div>
-            </div>
           </div>
-
         </div>
       </div>
 

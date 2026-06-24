@@ -33,7 +33,7 @@ export const translations = {
     noteTitle: "Chú ý",
     noteContent: "Kết quả phụ thuộc vào tính chính xác của kết quả tuổi xương được phiên giải. Tất cả các công thức tính này đều chưa có dữ liệu tương tự cho quần thể người Việt Nam đương đại, các công thức đều dựa trên số liệu từ các nghiên cứu của quần thể trẻ Mỹ, da trắng. Kết quả chỉ phục vụ cho công tác tư vấn và hỗ trợ đưa ra quyết định lâm sàng. Không mang tính tiên đoán tương lai.",
     link: "dotienson.com/app",
-    useTW2: "Sử dụng TW Mark II",
+    useTW2: "TW II",
     useRWT: "Sử dụng Roche-Wainer-Thissen",
     pahLegend: "",
     mphLegend: "MPH là Chiều cao theo di truyền với sai số +/-8.5cm.",
@@ -125,15 +125,16 @@ export const translations = {
     ageGenderChanged: "Thay đổi Thông tin cơ bản",
     ageGenderChangedDesc: "Bạn vừa thay đổi Tuổi hoặc Giới tính. Bạn có muốn tạo Phiên khám mới (xoá các số đo cũ) không?",
     resetData: "Tạo mới",
+    legendAndCoeffs: "Chú thích và Hệ số",
     labelBoneXpert: "BoneXpert PAH 3.1",
     labelAphv: "Đỉnh tăng cao (APHV)",
     examDatePrefix: "Ngày khám:",
     generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => ({
       methodName: 'Thuật toán BoneXpert AHP 3.1',
-      midText: ` (Visiana) dự đoán đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi, chiều cao trưởng thành khoảng `,
+      midText: ` (Visiana) dự đoán chiều cao trưởng thành khoảng `,
       pah: bxPah || '...',
       error: bxErr || '...',
-      endText: ' cm (tham chiếu AsiChi).'
+      endText: ` cm (AsiChi), đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi (Zurich LS).`
     }),
   },
   en: {
@@ -170,7 +171,7 @@ export const translations = {
     noteTitle: "Note",
     noteContent: "Results depend on the accuracy of the interpreted bone age. All of these calculation formulas currently lack similar data for the contemporary Vietnamese population; they are based on data from studies of white American children. The results are solely for counseling and supporting clinical decision-making. They are not predictive of the future.",
     link: "dotienson.com/app",
-    useTW2: "Try TW Mark II (beta)",
+    useTW2: "TW II",
     useRWT: "Use Roche-Wainer-Thissen",
     pahLegend: "",
     mphLegend: "MPH is Mid-Parental Height based on genetic factors with an error margin of +/- 8.5cm.",
@@ -259,15 +260,16 @@ export const translations = {
     ageGenderChanged: "Basic Info Changed",
     ageGenderChangedDesc: "You just changed Age or Gender. Do you want to start a New Session (clear old measurements)?",
     resetData: "New Session",
+    legendAndCoeffs: "Legend & Coefficients",
     labelBoneXpert: "BoneXpert PAH 3.1",
     labelAphv: "Age at Peak Height Velocity (APHV)",
     examDatePrefix: "Exam date:",
     generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => ({
       methodName: 'BoneXpert AHP 3.1',
-      midText: ` (Visiana) algorithm predicts APHV at ${aphvX || '...'} years, adult height around `,
+      midText: ` (Visiana) algorithm predicts adult height around `,
       pah: bxPah || '...',
       error: bxErr || '...',
-      endText: ' cm (AsiChi reference).'
+      endText: ` cm (AsiChi reference), APHV at ${aphvX || '...'} years (Zurich LS).`
     }),
   }
 };

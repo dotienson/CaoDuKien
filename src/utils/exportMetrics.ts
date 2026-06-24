@@ -39,7 +39,14 @@ function generateChartImageBuffer(data: any[]): Uint8Array {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
 
-  for (let i = xMin; i <= xMax; i += 2) {
+  const range = xMax - xMin;
+  let interval = 2;
+  if (range > 40) interval = 10;
+  else if (range > 20) interval = 5;
+
+  const firstTick = Math.ceil(xMin / interval) * interval;
+
+  for (let i = firstTick; i <= xMax; i += interval) {
     const x = xScale(i);
     ctx.beginPath();
     ctx.moveTo(x, height - marginBottom);

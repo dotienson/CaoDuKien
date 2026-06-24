@@ -35,7 +35,14 @@ export const HeightPredictionChart: React.FC<HeightPredictionChartProps> = ({ da
 
   // Generate x-axis ticks
   const ticks = [];
-  for (let i = xMin; i <= xMax; i += 2) {
+  const range = xMax - xMin;
+  let interval = 2;
+  if (range > 40) interval = 10;
+  else if (range > 20) interval = 5;
+
+  const firstTick = Math.ceil(xMin / interval) * interval;
+
+  for (let i = firstTick; i <= xMax; i += interval) {
     ticks.push(i);
   }
 
