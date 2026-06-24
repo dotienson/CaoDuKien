@@ -579,9 +579,10 @@ function MainApp() {
     }
 
     if (resultTextStr && (boneXpertPah || boneXpertError || aphv)) {
-      const bxSent = t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError);
+      const bxSentObj = t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError);
+      const bxSentText = `${bxSentObj.methodName}${bxSentObj.midText}${bxSentObj.pah} +/- ${bxSentObj.error}${bxSentObj.endText} `;
       if (resultTextStr.includes(t.examDatePrefix)) {
-        resultTextStr = resultTextStr.replace(t.examDatePrefix, bxSent + t.examDatePrefix);
+        resultTextStr = resultTextStr.replace(t.examDatePrefix, bxSentText + t.examDatePrefix);
       }
     }
 
@@ -627,7 +628,7 @@ function MainApp() {
     }
   }
   if (boneXpertPah && boneXpertError) {
-    chartData.push({ method: t.labelBoneXpert, pah: Number(boneXpertPah.replace(',', '.')), error: Number(boneXpertError.replace(',', '.')), style: { lineDash: '8,4,2,4', markerType: 'star' as const } });
+    chartData.push({ method: "BoneXpert (AsiChi)", pah: Number(boneXpertPah.replace(',', '.')), error: Number(boneXpertError.replace(',', '.')), style: { lineDash: '8,4,2,4', markerType: 'star' as const } });
   }
 
   const handleReset = () => {
