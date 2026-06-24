@@ -79,6 +79,8 @@ export const translations = {
     resultRWT: "RWT",
     resultBP: "BP",
     resultTW1: "TW1",
+    conclusionTitle: "KẾT LUẬN",
+    adminInfoTitle: "THÔNG TIN HÀNH CHÍNH",
     resultTextBPOnly: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, examDate: string, isDeviated: boolean) => 
       `* DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH\nBằng thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pahBP}cm +/- 5cm (Bayley-Pinneau). Ngày khám: ${examDate}. Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán.${isDeviated ? ' Không áp dụng phương pháp TW1,2 và RWT trong trường hợp này.' : ''}`,
     resultTextBoth: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, examDate: string) => 
@@ -215,6 +217,8 @@ export const translations = {
     resultRWT: "RWT",
     resultBP: "BP",
     resultTW1: "TW1",
+    conclusionTitle: "CONCLUSION",
+    adminInfoTitle: "PATIENT INFORMATION",
     resultTextBPOnly: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, examDate: string, isDeviated: boolean) => 
       `* PREDICTED ADULT HEIGHT\nUsing classic algorithms, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, bone age ~ ${boneAge} years) is: ${pahBP}cm +/- 5cm (Bayley-Pinneau). Exam date: ${examDate}. The calculated result is for periodic monitoring and clinical indications, not predictive.${isDeviated ? ' TW1,2 and RWT methods are not applicable in this case.' : ''}`,
     resultTextBoth: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, examDate: string) => 

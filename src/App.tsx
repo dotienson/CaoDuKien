@@ -3,10 +3,9 @@ import { translations, Language } from './i18n';
 import { Gender, MenarcheStatus, getCoefficients, calculatePAH, calculateMPH, Coefficients } from './data/twmc';
 import { calculateRWT, RWTCoefficient } from './data/rwt';
 import { bpTable } from './bpTable';
-import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown, Download } from 'lucide-react';
+import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { exportDocx } from './utils/exportMetrics';
-import html2canvas from 'html2canvas';
 import { HeightPredictionChart } from './components/HeightPredictionChart';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
@@ -667,26 +666,6 @@ function MainApp() {
     exportDocx(patientData, { chartData }, conclusions, t);
   };
 
-  const handleDownloadChart = async () => {
-    const chartElement = document.getElementById('hexapah-chart');
-    if (!chartElement) return;
-    
-    try {
-      const canvas = await html2canvas(chartElement, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
-      
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `PentaPAH_Chart_${name || 'patient'}.png`;
-      link.click();
-    } catch (err) {
-      console.error('Failed to export chart image', err);
-    }
-  };
-
   const themeColor = gender === 'girl' ? 'pink' : 'blue';
   const bgGradient = gender === 'girl' ? 'from-pink-100 via-rose-50 to-pink-200' : 'from-blue-100 via-sky-50 to-blue-200';
   const primaryColor = gender === 'girl' ? 'text-pink-600' : 'text-blue-600';
@@ -763,7 +742,8 @@ function MainApp() {
         </div>
 
         {/* Main Content to Export */}
-        <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:p-10">
+        <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:p-10 relative">
+          <div className="absolute inset-1.5 md:inset-2 border-2 border-gray-300/30 rounded-[1.25rem] md:rounded-[1.5rem] pointer-events-none"></div>
           
           {/* Header */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8 border-b border-gray-200/50 pb-6">
@@ -779,8 +759,12 @@ function MainApp() {
           </div>
 
           {/* Form Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-8">
-            {/* Left Column */}
+          <div className={`${theme.cardBg} px-4 md:px-6 pt-8 pb-6 rounded-2xl border ${theme.cardBorder} relative shadow-sm mb-8 mt-6`}>
+            <div className={`absolute -top-3 left-6 px-3 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded-full border ${theme.cardBorder} ${theme.labelDark} shadow-sm`}>
+              {t.adminInfoTitle}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+              {/* Left Column */}
             <div className="space-y-5 md:col-span-5">
               <div>
                 <label className={`block text-sm ${theme.labelDark} mb-1.5`}>{t.name}</label>
@@ -1143,6 +1127,7 @@ function MainApp() {
               </div>
             </div>
           </div>
+          </div>
 
           {/* TW75 & BP Note Display */}
           {(noDataError || bpNoDataError || isBoneAgeDeviated) && !invalidAgeError && (
@@ -1162,35 +1147,43 @@ function MainApp() {
                 animate={{ opacity: 1, height: 'auto' }}
                 className="mb-8"
               >
-                <div className={`${theme.cardBg} p-4 rounded-2xl border ${theme.cardBorder} relative shadow-sm whitespace-pre-wrap`}>
-                  <p className={`text-sm ${theme.labelDark} leading-relaxed pr-10 font-medium text-justify`}>
+                <div className={`${theme.cardBg} px-5 pt-6 pb-5 rounded-2xl border ${theme.cardBorder} relative shadow-sm whitespace-pre-wrap`}>
+                  <div className={`absolute -top-3 left-6 px-3 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded-full border ${theme.cardBorder} ${theme.labelDark} shadow-sm`}>
+                    {t.conclusionTitle}
+                  </div>
+                  <p className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
                     {resultTextStr}
                   </p>
-                  
-                  <div className="absolute top-4 right-4 flex space-x-2" data-html2canvas-ignore="true">
-                    <button 
-                      onClick={handleCopy}
-                      className={`p-2 rounded-lg transition-colors ${copied ? 'bg-green-100 text-green-600' : 'bg-white hover:bg-gray-50 text-gray-500 shadow-sm border border-gray-200'}`}
-                      title={t.copy}
-                    >
-                      <Copy size={16} />
-                    </button>
-                  </div>
+                </div>
+                <div className="flex justify-center flex-wrap gap-4 mt-4">
+                  <button 
+                    onClick={handleCopy}
+                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 ${copied ? 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
+                    title={t.copy}
+                  >
+                    {copied ? <Copy size={18} className="text-green-600" /> : <Copy size={18} />}
+                    {t.copy}
+                  </button>
+                  <button 
+                    onClick={handleExportDocx}
+                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-red-50 hover:bg-red-100/70 border-red-200 text-red-700`}
+                    title={t.exportDocx}
+                  >
+                    <FileText size={18} />
+                    {t.exportDocx}
+                  </button>
+                  <button
+                    onClick={() => setShowResetModal(true)}
+                    className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
+                  >
+                    <RefreshCw size={18} /> {t.newSession}
+                  </button>
                 </div>
               </motion.div>
             )}
 
             {/* Chart Section */}
             <div className="mt-10 pt-8 border-t border-white/40 relative">
-              <div className="absolute right-0 top-10 flex space-x-2 z-30" data-html2canvas-ignore="true">
-                <button 
-                  onClick={handleDownloadChart}
-                  className="p-2 rounded-lg transition-colors bg-white hover:bg-gray-50 text-gray-500 shadow-sm border border-gray-200"
-                  title={t.downloadChart}
-                >
-                  <Download size={16} />
-                </button>
-              </div>
               <div id="hexapah-chart" className="relative w-full max-w-md mx-auto h-72 border-l-2 border-b-2 border-gray-400 flex items-end justify-around pb-0 px-2 md:px-8 mb-12 bg-white/50 rounded-tr-lg pt-4">
               {/* Y-axis labels */}
               <div className="absolute left-1 bottom-0 text-[10px] text-gray-400 font-mono">{chartMin}</div>
@@ -1299,23 +1292,6 @@ function MainApp() {
               )}
             </div>
             
-            <div className="flex justify-center flex-wrap gap-4 mt-8 mb-4">
-              <button
-                onClick={() => setShowResetModal(true)}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
-              >
-                <RefreshCw size={18} /> {t.newSession}
-              </button>
-              <button 
-                onClick={handleExportDocx}
-                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-red-50 hover:bg-red-100/70 border-red-200 text-red-700`}
-                title={t.exportDocx}
-              >
-                <FileText size={18} />
-                {t.exportDocx}
-              </button>
-            </div>
-
           </div>
           </div>
           

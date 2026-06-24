@@ -192,16 +192,6 @@ export async function exportDocx(
               right: 1800,
               bottom: 2160,
               left: 1800,
-            },
-            borders: {
-              pageBorders: {
-                display: PageBorderDisplay.ALL_PAGES,
-                zOrder: PageBorderZOrder.FRONT,
-              },
-              pageBorderTop: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
-              pageBorderRight: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
-              pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
-              pageBorderLeft: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
             }
           }
         },
@@ -242,9 +232,27 @@ export async function exportDocx(
               bottom: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
               left: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
               right: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
+              insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
               insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
             },
             rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    columnSpan: 2,
+                    shading: { fill: "E0E7FF" },
+                    margins: { top: 100, bottom: 100, left: 200, right: 200 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: t.adminInfoTitle || 'THÔNG TIN HÀNH CHÍNH', bold: true, size: 24, color: "1E3A8A" })
+                        ],
+                        alignment: AlignmentType.CENTER
+                      })
+                    ]
+                  })
+                ]
+              }),
               new TableRow({
                 children: [
                   new TableCell({
@@ -310,29 +318,58 @@ export async function exportDocx(
           
           new Paragraph({ text: '' }), // Spacing
 
-          // Conclusions
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: 'Kết luận',
-                size: 32,
-                bold: true,
-                color: "1E3A8A"
+          // Conclusions Box
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
+              bottom: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
+              left: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
+              right: { style: BorderStyle.SINGLE, size: 4, color: "1E3A8A" },
+              insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+            },
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: "E0E7FF" },
+                    margins: { top: 100, bottom: 100, left: 200, right: 200 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: t.conclusionTitle || 'KẾT LUẬN', bold: true, size: 24, color: "1E3A8A" })
+                        ],
+                        alignment: AlignmentType.CENTER
+                      })
+                    ]
+                  })
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    margins: { top: 200, bottom: 200, left: 200, right: 200 },
+                    shading: { fill: "F8FAFC" },
+                    children: conclusions.map(c => new Paragraph({
+                      bullet: { level: 0 },
+                      children: [
+                        new TextRun({ text: c.methodName, bold: true, italics: true }),
+                        new TextRun({ text: c.midText }),
+                        new TextRun({ text: `${c.pah} +/- ${c.error}`, bold: true, color: "800000" }),
+                        new TextRun({ text: c.endText })
+                      ],
+                      spacing: { after: 60 },
+                      alignment: AlignmentType.JUSTIFIED
+                    }))
+                  })
+                ]
               })
-            ],
-            spacing: { before: 120, after: 60 },
+            ]
           }),
-          ...conclusions.map(c => new Paragraph({
-            bullet: { level: 0 },
-            children: [
-              new TextRun({ text: c.methodName, bold: true, italics: true }),
-              new TextRun({ text: c.midText }),
-              new TextRun({ text: `${c.pah} +/- ${c.error}`, bold: true, color: "800000" }),
-              new TextRun({ text: c.endText })
-            ],
-            spacing: { after: 60 },
-            alignment: AlignmentType.JUSTIFIED
-          })),
+          
           new Paragraph({ text: '' }),
           
           ...(results.chartData && results.chartData.length > 0 ? [
@@ -358,12 +395,12 @@ export async function exportDocx(
                 text: 'Lưu ý: ', 
                 bold: true,
                 italics: true,
-                size: 18
+                size: 16
               }),
               new TextRun({
                 text: 'Kết quả phụ thuộc nhiều vào kết quả tuổi xương. Tất cả thuật toán đều chưa có dữ liệu tương tự cho quần thể người Việt Nam đương thời. Các công thức cổ điển đều dựa trên số liệu của quần thể trẻ Âu, Mỹ. BoneXpert hiện dùng tham chiếu trẻ dân tộc Hán tại Trung Quốc (Asian Chinese). Kết quả chỉ phục vụ đánh giá hướng tăng trưởng, hỗ trợ tư vấn và đưa ra quyết định lâm sàng. Các kết quả này không mang tính tiên đoán tương lai.',
                 italics: true,
-                size: 18
+                size: 16
               })
             ],
             alignment: AlignmentType.JUSTIFIED,
