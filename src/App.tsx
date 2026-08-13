@@ -7,6 +7,7 @@ import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } 
 import { motion, AnimatePresence } from 'motion/react';
 import { exportDocx } from './utils/exportMetrics';
 import { HeightPredictionChart } from './components/HeightPredictionChart';
+import { PrintableReport } from './components/PrintableReport';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
 
@@ -199,8 +200,14 @@ export default function App() {
           <div className="bg-white px-10 pt-10 pb-8 border border-gray-300 flex flex-col items-center">
             
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                PentaPAH - Dr. Sơn
+              <h1 className="font-bold text-gray-900 tracking-tight">
+                <span className="block md:hidden text-2xl">
+                  PolyPredict APH Dr.Son
+                </span>
+                <span className="hidden md:block text-3xl">
+                  PolyPredict APH version 26.8<br/>
+                  <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
+                </span>
               </h1>
             </div>
             
@@ -271,6 +278,8 @@ function MainApp() {
   const [boneXpertPah, setBoneXpertPah] = useState('');
   const [boneXpertError, setBoneXpertError] = useState('');
   const [aphv, setAphv] = useState('');
+  const [isTeleconsultation, setIsTeleconsultation] = useState(false);
+  const [hideCoefficients, setHideCoefficients] = useState(false);
 
   const [showNote, setShowNote] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
@@ -309,6 +318,8 @@ function MainApp() {
             if (parsed.boneXpertPah) setBoneXpertPah(parsed.boneXpertPah);
             if (parsed.boneXpertError) setBoneXpertError(parsed.boneXpertError);
             if (parsed.aphv) setAphv(parsed.aphv);
+            if (parsed.isTeleconsultation !== undefined) setIsTeleconsultation(parsed.isTeleconsultation);
+            if (parsed.hideCoefficients !== undefined) setHideCoefficients(parsed.hideCoefficients);
             if (parsed.lang) setLang(parsed.lang);
           }
         } catch (e) {
@@ -326,14 +337,14 @@ function MainApp() {
   useEffect(() => {
     if (isInitializing.current) return;
     const stateToSave = {
-      lang, name, gender, ageMode, dob, examDate, ageYears, ageMonths, currentHeight, fatherHeight, motherHeight, weight, recumbentLength, menarche, boneAge, noBoneAge, doctor, xrayDate, method, boneXpertPah, boneXpertError, aphv
+      lang, name, gender, ageMode, dob, examDate, ageYears, ageMonths, currentHeight, fatherHeight, motherHeight, weight, recumbentLength, menarche, boneAge, noBoneAge, doctor, xrayDate, method, boneXpertPah, boneXpertError, aphv, isTeleconsultation, hideCoefficients
     };
     try {
       localStorage.setItem('triPredictState', JSON.stringify(stateToSave));
     } catch (e) {
       console.warn('Failed to set localStorage');
     }
-  }, [lang, name, gender, ageMode, dob, examDate, ageYears, ageMonths, currentHeight, fatherHeight, motherHeight, weight, recumbentLength, menarche, boneAge, noBoneAge, doctor, xrayDate, method, boneXpertPah, boneXpertError, aphv]);
+  }, [lang, name, gender, ageMode, dob, examDate, ageYears, ageMonths, currentHeight, fatherHeight, motherHeight, weight, recumbentLength, menarche, boneAge, noBoneAge, doctor, xrayDate, method, boneXpertPah, boneXpertError, aphv, isTeleconsultation, hideCoefficients]);
 
   const confirmNewSessionPrompt = () => {
     if (!isInitializing.current && (currentHeight || weight || boneAge || boneXpertPah)) {
@@ -367,6 +378,8 @@ function MainApp() {
     setBoneXpertPah('');
     setBoneXpertError('');
     setAphv('');
+    setIsTeleconsultation(false);
+    setHideCoefficients(false);
     setShowSessionPrompt(false);
     setShowRestoreModal(false);
   };
@@ -550,22 +563,22 @@ function MainApp() {
   if ((numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && ageYears !== '') {
     if (isBoneAgeDeviated) {
       if (bpResult) {
-        resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated);
+        resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated, isTeleconsultation);
       }
     } else if (method === 'all' && pahResult && bpResult && rwtResult) {
-      resultTextStr = t.resultTextAll(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
+      resultTextStr = t.resultTextAll(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), isTeleconsultation);
     } else if (method === 'rwt' && rwtResult) {
-      resultTextStr = t.resultTextRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), noBoneAge);
+      resultTextStr = t.resultTextRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), noBoneAge, isTeleconsultation);
     } else if (pahResult && bpResult && (method === 'both' || method === 'all')) {
-      resultTextStr = t.resultTextBoth(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+      resultTextStr = t.resultTextBoth(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(pahResult.pah), String(pahResult.error), formatDate(examDate), isTeleconsultation);
     } else if (bpResult && rwtResult && method === 'all') {
-      resultTextStr = t.resultTextBPRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
+      resultTextStr = t.resultTextBPRWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), isTeleconsultation);
     } else if (pahResult && rwtResult && method === 'all') {
-      resultTextStr = t.resultTextTW1RWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate));
+      resultTextStr = t.resultTextTW1RWT(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), String(rwtResult.pah), String(rwtResult.error), formatDate(examDate), isTeleconsultation);
     } else if (bpResult && (method === 'bp' || method === 'both' || method === 'all')) {
-      resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated);
+      resultTextStr = t.resultTextBPOnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(bpResult.pah), formatDate(examDate), isBoneAgeDeviated, isTeleconsultation);
     } else if (pahResult && (method === 'tw1' || method === 'both' || method === 'all')) {
-      resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate));
+      resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate), isTeleconsultation);
     }
 
     if (resultTextStr && (boneXpertPah || boneXpertError || aphv)) {
@@ -579,20 +592,20 @@ function MainApp() {
     // Generate export conclusions
     if (isBoneAgeDeviated) {
       if (bpResult && (method === 'bp' || method === 'all' || method === 'both')) {
-        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`));
+        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`, hideCoefficients));
       }
     } else {
       if (bpResult && (method === 'bp' || method === 'both' || method === 'all')) {
-        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`));
+        conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`, hideCoefficients));
       }
       if (pahResult && usedCoeffs && (method === 'tw1' || method === 'both' || method === 'all')) {
         const formulaStr = `(H × ${usedCoeffs.alpha}) + (A × ${usedCoeffs.beta}) + (BA × ${usedCoeffs.gamma}) + ${usedCoeffs.c}`;
-        conclusions.push(t.generateTW1Sent(String(pahResult.pah), String(pahResult.error), formulaStr));
+        conclusions.push(t.generateTW1Sent(String(pahResult.pah), String(pahResult.error), formulaStr, hideCoefficients));
       }
       if (rwtResult && (method === 'rwt' || method === 'all')) {
         const c = rwtResult.coefficients;
         const coeffsStr = `βRL=${c.betaRL}, βW=${c.betaW}, βMPS=${c.betaMPS}, βSA=${c.betaSA}, β0=${c.beta0}`;
-        conclusions.push(t.generateRWTSent(String(rwtResult.pah), String(rwtResult.error), coeffsStr));
+        conclusions.push(t.generateRWTSent(String(rwtResult.pah), String(rwtResult.error), coeffsStr, hideCoefficients));
       }
     }
     
@@ -637,10 +650,13 @@ function MainApp() {
     setDoctor('Đỗ Tiến Sơn');
     setMethod('all');
     setWeight('');
+    setRecumbentLength('');
     setMenarche('none');
     setBoneXpertPah('');
     setBoneXpertError('');
     setAphv('');
+    setIsTeleconsultation(false);
+    setHideCoefficients(false);
     setShowResetModal(false);
   };
 
@@ -652,16 +668,41 @@ function MainApp() {
     }
   };
 
+  
+  const patientDataForPrint = {
+    name,
+    gender,
+    genderStr,
+    ageYears: ageYears || '0',
+    ageMonths: ageMonths || 0,
+    currentHeight,
+    xrayDate: formatDate(xrayDate),
+    examDate: formatDate(examDate),
+    dob: formatDate(dob),
+    weight,
+    menarche,
+    effectiveBoneAge,
+    mph: mph || '---',
+    isTeleconsultation,
+    hideCoefficients,
+    boneXpertPah
+  };
+
   const handleExportDocx = () => {
     const patientData = {
       name,
+      gender,
       genderStr,
       ageYears: ageYears || '0',
       ageMonths: ageMonths || 0,
       currentHeight,
       weight,
+      menarche,
       effectiveBoneAge,
-      mph: mph || '---'
+      mph: mph || '---',
+      isTeleconsultation,
+      hideCoefficients,
+      boneXpertPah
     };
     exportDocx(patientData, { chartData }, conclusions, t);
   };
@@ -719,6 +760,13 @@ function MainApp() {
         
         {/* Header Controls */}
         <div className="flex justify-end mb-4 gap-2 items-center">
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="p-1.5 bg-white/50 hover:bg-white/70 rounded-full transition-colors text-gray-600 mr-2"
+            title={t.newSession}
+          >
+            <RefreshCw size={18} />
+          </button>
           <button 
             onClick={() => setLang('vi')}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${lang === 'vi' ? primaryBg + ' text-white' : 'bg-white/50 text-gray-600'}`}
@@ -747,9 +795,19 @@ function MainApp() {
           
           {/* Header */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8 border-b border-gray-200/50 pb-6">
-            <div className="md:col-span-7 text-center md:text-left">
-              <h1 className={`text-2xl md:text-3xl font-bold tracking-tight ${primaryColor}`}>{t.title}</h1>
-              <p className={`font-medium mt-1 ${primaryColor} opacity-80`}>{t.subtitle}</p>
+            <div className="md:col-span-7 text-center md:text-left flex flex-col md:flex-row items-center md:items-start gap-3">
+              <div>
+                <h1 className={`font-bold tracking-tight ${primaryColor} flex items-center justify-center md:justify-start gap-3`}>
+                  <span className="block md:hidden text-2xl">
+                    PolyPredict APH Dr.Son
+                  </span>
+                  <span className="hidden md:block text-3xl">
+                    PolyPredict APH version 26.8<br/>
+                    <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
+                  </span>
+                </h1>
+                <p className={`font-medium mt-1 ${primaryColor} opacity-80 block md:hidden`}>{t.subtitle}</p>
+              </div>
             </div>
             <div className="md:col-span-5 md:text-right text-center flex flex-col justify-center">
               <p className={`text-xs whitespace-pre-line leading-relaxed opacity-80 ${primaryColor}`}>
@@ -971,6 +1029,27 @@ function MainApp() {
                         )}
                       </div>
                     </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-6">
+                      <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={isTeleconsultation} 
+                          onChange={(e) => setIsTeleconsultation(e.target.checked)} 
+                          className={`rounded border-[var(--card-border)] text-${themeColor}-600 focus:ring-${themeColor}-500 w-4 h-4`} 
+                        />
+                        <span className={theme.labelDark}>{t.teleconsultation}</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={hideCoefficients} 
+                          onChange={(e) => setHideCoefficients(e.target.checked)} 
+                          className={`rounded border-[var(--card-border)] text-${themeColor}-600 focus:ring-${themeColor}-500 w-4 h-4`} 
+                        />
+                        <span className={theme.labelDark}>{t.hideCoefficients}</span>
+                      </label>
+                    </div>
                   </div>
                   
                   {/* Result Box */}
@@ -1138,49 +1217,59 @@ function MainApp() {
              </div>
           )}
 
-          {/* Report Wrapper for PDF */}
-          <div id="hexapah-report" className="bg-transparent p-2 -mx-2 rounded-xl">
-            {/* Interpretation Text */}
+          <AnimatePresence>
             {resultTextStr && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mb-8"
+              <motion.div
+                initial={{ opacity: 0, y: 20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
               >
-                <div className={`${theme.cardBg} px-5 pt-6 pb-5 rounded-2xl border ${theme.cardBorder} relative shadow-sm whitespace-pre-wrap`}>
-                  <div className={`absolute -top-3 left-6 px-3 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded-full border ${theme.cardBorder} ${theme.labelDark} shadow-sm`}>
-                    {t.conclusionTitle}
+                {/* Report Wrapper for PDF */}
+                <div id="hexapah-report" className="bg-transparent p-2 -mx-2 rounded-xl">
+                  {/* Interpretation Text */}
+                  <div className="mb-8">
+                    <div className={`${theme.cardBg} px-5 pt-6 pb-5 rounded-2xl border ${theme.cardBorder} relative shadow-sm whitespace-pre-wrap`}>
+                      <div className={`absolute -top-3 left-6 px-3 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded-full border ${theme.cardBorder} ${theme.labelDark} shadow-sm`}>
+                        {t.conclusionTitle}
+                      </div>
+                      <p className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
+                        {resultTextStr}
+                      </p>
+                    </div>
+                    <div className="flex justify-center flex-wrap gap-4 mt-4">
+                      <button 
+                        onClick={handleCopy}
+                        className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 ${copied ? 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
+                        title={t.copy}
+                      >
+                        {copied ? <Copy size={18} className="text-green-600" /> : <Copy size={18} />}
+                        {t.copy}
+                      </button>
+                      <button 
+                        onClick={handleExportDocx}
+                        className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-red-50 hover:bg-red-100/70 border-red-200 text-red-700`}
+                        title={t.exportDocx}
+                      >
+                        <FileText size={18} />
+                        {t.exportDocx}
+                      </button>
+                      <button 
+                        onClick={() => window.print()}
+                        className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-orange-50 hover:bg-orange-100/70 border-orange-200 text-orange-700`}
+                        title={t.exportPdf}
+                      >
+                        <FileDown size={18} />
+                        {t.exportPdf}
+                      </button>
+                      <button
+                        onClick={() => setShowResetModal(true)}
+                        className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
+                      >
+                        <RefreshCw size={18} /> {t.newSession}
+                      </button>
+                    </div>
                   </div>
-                  <p className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
-                    {resultTextStr}
-                  </p>
-                </div>
-                <div className="flex justify-center flex-wrap gap-4 mt-4">
-                  <button 
-                    onClick={handleCopy}
-                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 ${copied ? 'bg-green-50 hover:bg-green-100 border-green-200 text-green-700' : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700'}`}
-                    title={t.copy}
-                  >
-                    {copied ? <Copy size={18} className="text-green-600" /> : <Copy size={18} />}
-                    {t.copy}
-                  </button>
-                  <button 
-                    onClick={handleExportDocx}
-                    className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-red-50 hover:bg-red-100/70 border-red-200 text-red-700`}
-                    title={t.exportDocx}
-                  >
-                    <FileText size={18} />
-                    {t.exportDocx}
-                  </button>
-                  <button
-                    onClick={() => setShowResetModal(true)}
-                    className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
-                  >
-                    <RefreshCw size={18} /> {t.newSession}
-                  </button>
-                </div>
-              </motion.div>
-            )}
 
             {/* Chart Section */}
             <div className="mt-10 pt-8 border-t border-white/40 relative">
@@ -1291,11 +1380,13 @@ function MainApp() {
                 </div>
               )}
             </div>
-            
           </div>
-          </div>
-          
-          {/* Footer */}
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+  
+  {/* Footer */}
           <div className="mt-4 pt-4 border-t border-gray-200/50 text-center">
             <div className="flex justify-center gap-6 mb-4">
               <button 
@@ -1370,6 +1461,16 @@ function MainApp() {
         </div>
       </div>
 
+      
+      {/* Printable Report (Hidden in UI, only visible when printing) */}
+      <PrintableReport 
+        patientData={patientDataForPrint} 
+        results={{ resultText: resultTextStr, chartData }} 
+        conclusions={conclusions} 
+        t={t} 
+        chartData={chartData} 
+      />
+      
       {/* Reset Confirmation Modal */}
       <Modal 
         show={showResetModal}
