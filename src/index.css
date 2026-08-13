@@ -3,29 +3,17 @@
 html, body {
   touch-action: pan-x pan-y;
 }
+
 body {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
 }
+
 input, textarea {
   -webkit-user-select: auto !important;
   -moz-user-select: auto !important;
   -ms-user-select: auto !important;
   user-select: auto !important;
-}
-
-@media print {
-  #root > div:first-child > div:not(#print-only-container) {
-    display: none !important;
-  }
-  
-  body {
-    background: white;
-  }
-  
-  @page {
-    margin: 0;
-  }
 }

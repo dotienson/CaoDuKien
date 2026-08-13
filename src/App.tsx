@@ -7,7 +7,6 @@ import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } 
 import { motion, AnimatePresence } from 'motion/react';
 import { exportDocx } from './utils/exportMetrics';
 import { HeightPredictionChart } from './components/HeightPredictionChart';
-import { PrintableReport } from './components/PrintableReport';
 
 type PredictionMethod = 'tw1' | 'bp' | 'both' | 'rwt' | 'all';
 
@@ -668,26 +667,6 @@ function MainApp() {
     }
   };
 
-  
-  const patientDataForPrint = {
-    name,
-    gender,
-    genderStr,
-    ageYears: ageYears || '0',
-    ageMonths: ageMonths || 0,
-    currentHeight,
-    xrayDate: formatDate(xrayDate),
-    examDate: formatDate(examDate),
-    dob: formatDate(dob),
-    weight,
-    menarche,
-    effectiveBoneAge,
-    mph: mph || '---',
-    isTeleconsultation,
-    hideCoefficients,
-    boneXpertPah
-  };
-
   const handleExportDocx = () => {
     const patientData = {
       name,
@@ -1254,14 +1233,6 @@ function MainApp() {
                         <FileText size={18} />
                         {t.exportDocx}
                       </button>
-                      <button 
-                        onClick={() => window.print()}
-                        className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-full transition-all shadow-sm border font-bold hover:scale-105 bg-orange-50 hover:bg-orange-100/70 border-orange-200 text-orange-700`}
-                        title={t.exportPdf}
-                      >
-                        <FileDown size={18} />
-                        {t.exportPdf}
-                      </button>
                       <button
                         onClick={() => setShowResetModal(true)}
                         className={`inline-flex items-center gap-2 px-6 py-2.5 ${theme.cardBg} ${theme.labelDark} font-bold rounded-full shadow-sm border ${theme.cardBorder} transition-all hover:scale-105`}
@@ -1461,16 +1432,6 @@ function MainApp() {
         </div>
       </div>
 
-      
-      {/* Printable Report (Hidden in UI, only visible when printing) */}
-      <PrintableReport 
-        patientData={patientDataForPrint} 
-        results={{ resultText: resultTextStr, chartData }} 
-        conclusions={conclusions} 
-        t={t} 
-        chartData={chartData} 
-      />
-      
       {/* Reset Confirmation Modal */}
       <Modal 
         show={showResetModal}
