@@ -36,7 +36,7 @@ export const translations = {
     useTW2: "TW II",
     useRWT: "Sử dụng Roche-Wainer-Thissen",
     pahLegend: "",
-    mphLegend: "MPH là Chiều cao theo di truyền với sai số +/-8.5cm.",
+    mphLegend: "MPH là Chiều cao theo di truyền với sai số ±10 cm đối với nam và ±9 cm đối với nữ. [Tanner, J. M. (1986). Use and abuse of growth standards. In: Falkner, F., & Tanner, J. M. (Eds.), Human Growth: A Comprehensive Treatise (2nd ed., Vol. 3, pp. 95–109). Plenum Press, New York. - dành cho nội dung điều chỉnh hệ số điều chỉnh MPH]",
     illustrationNote: "Chú ý: PAH TW1 chỉ áp dụng khi tuổi xương không chênh so với tuổi thực.",
     vnAvgMale: "Chiều cao trung bình của nam giới trưởng thành (Việt Nam, 2020): 168.1cm (với ca trẻ nam).",
     vnAvgFemale: "Chiều cao trung bình của nữ giới trưởng thành (Việt Nam, 2020): 156.2cm (với ca nữ).",
@@ -91,6 +91,8 @@ export const translations = {
       `* ${isTeleconsultation ? 'HỘI CHẨN TỪ XA VỚI BÁC SĨ SƠN VỀ CHIỀU CAO KHI TRƯỞNG THÀNH' : 'DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH'}\nBằng thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pah}cm +/- ${error}cm (Tanner-Whitehouse Mark I). Kết quả tính phục vụ cho các chỉ định lâm sàng, không mang tính tiên đoán, chỉ áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt. Kết quả tính ngày: ${new Date().toLocaleDateString('vi-VN')} - OmniAPH® 8.2.`,
     resultTextRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahRWT: string, errorRWT: string, examDate: string, noBoneAge: boolean, isTeleconsultation?: boolean) => 
       `* ${isTeleconsultation ? 'HỘI CHẨN TỪ XA VỚI BÁC SĨ SƠN VỀ CHIỀU CAO KHI TRƯỞNG THÀNH' : 'DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH'}\nBằng thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, ${noBoneAge ? 'chưa có số liệu tuổi xương' : `tuổi xương ~ ${boneAge} tuổi` }) dự kiến như sau: ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). Kết quả tính phục vụ cho các chỉ định lâm sàng, không mang tính tiên đoán, chỉ áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt. Kết quả tính ngày: ${new Date().toLocaleDateString('vi-VN')} - OmniAPH® 8.2.`,
+    resultTextKROnly: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, krPAH: string, krError: string, isTeleconsultation?: boolean) => 
+      `* ${isTeleconsultation ? 'HỘI CHẨN TỪ XA VỚI BÁC SĨ SƠN VỀ CHIỀU CAO KHI TRƯỞNG THÀNH' : 'DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH'}\nBằng thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm, krPAH: ${krPAH}cm +/- ${krError}cm` : ''}, chưa có số liệu tuổi xương) dự kiến theo Khamis-Roche. Kết quả tính phục vụ cho các chỉ định lâm sàng, không mang tính tiên đoán, chỉ áp dụng cho nhóm trẻ khoẻ mạnh không kèm bệnh lý đặc biệt. Kết quả tính ngày: ${new Date().toLocaleDateString('vi-VN')} - OmniAPH® 8.2.`,
     resultTextAll: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string, isTeleconsultation?: boolean) => 
       `* ${isTeleconsultation ? 'HỘI CHẨN TỪ XA VỚI BÁC SĨ SƠN VỀ CHIỀU CAO KHI TRƯỞNG THÀNH' : 'DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH'}\nBằng các thuật toán kinh điển, chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pahBP}cm +/- 5cm (Bayley-Pinneau), ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I) và ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán. Kết quả tính ngày: ${new Date().toLocaleDateString('vi-VN')} - OmniAPH® 8.2.`,
     resultTextBPRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahRWT: string, errorRWT: string, examDate: string, isTeleconsultation?: boolean) => 
@@ -124,7 +126,7 @@ export const translations = {
       error: error,
       endText: ' cm.'
     }),
-    newSession: "Phiên khám mới",
+    newSession: "Lượt khám mới",
     exportDocx: "Xuất báo cáo chi tiết",
     downloadChart: "Tải ảnh biểu đồ",
     confirmReset: "Xác nhận xoá thông tin và tạo phiên khám mới?",
@@ -134,7 +136,7 @@ export const translations = {
     restoreSessionDesc: "Bạn có dữ liệu từ phiên làm việc trước. Bạn muốn giữ lại hay bắt đầu phiên mới?",
     keepData: "Giữ lại",
     ageGenderChanged: "Thay đổi Thông tin cơ bản",
-    ageGenderChangedDesc: "Bạn vừa thay đổi Tuổi hoặc Giới tính. Bạn có muốn tạo Phiên khám mới (xoá các số đo cũ) không?",
+    ageGenderChangedDesc: "Bạn vừa thay đổi Tuổi hoặc Giới tính. Bạn có muốn tạo Lượt khám mới (xoá các số đo cũ) không?",
     resetData: "Tạo mới",
     legendAndCoeffs: "Chú thích và Hệ số",
     labelBoneXpert: "BoneXpert PAH 3.1",
@@ -185,7 +187,7 @@ export const translations = {
     useTW2: "TW II",
     useRWT: "Use Roche-Wainer-Thissen",
     pahLegend: "",
-    mphLegend: "MPH is Mid-Parental Height based on genetic factors with an error margin of +/- 8.5cm.",
+    mphLegend: "MPH is Mid-Parental Height based on genetic factors with an error margin of ±10 cm for boys and ±9 cm for girls. [Tanner, J. M. (1986). Use and abuse of growth standards. In: Falkner, F., & Tanner, J. M. (Eds.), Human Growth: A Comprehensive Treatise (2nd ed., Vol. 3, pp. 95–109). Plenum Press, New York. - dành cho nội dung điều chỉnh hệ số điều chỉnh MPH]",
     illustrationNote: "Note: PAH TW1 only applies when bone age does not deviate from chronological age.",
     vnAvgMale: "Average adult male height (Vietnam, 2020): 168.1cm (for boys).",
     vnAvgFemale: "Average adult female height (Vietnam, 2020): 156.2cm (for girls).",
@@ -237,6 +239,8 @@ export const translations = {
       `* ${isTeleconsultation ? 'TELECONSULTATION WITH DR. SON FOR PREDICTED ADULT HEIGHT' : 'PREDICTED ADULT HEIGHT'}\nUsing a classic algorithm, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, bone age ~ ${boneAge} years) is: ${pah}cm +/- ${error}cm (Tanner-Whitehouse Mark I). The calculated result is for clinical indications, not predictive, and only applicable to healthy children without special medical conditions. Calculation date: ${new Date().toLocaleDateString('en-US')} - OmniAPH® 8.2.`,
     resultTextRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahRWT: string, errorRWT: string, examDate: string, noBoneAge: boolean, isTeleconsultation?: boolean) => 
       `* ${isTeleconsultation ? 'TELECONSULTATION WITH DR. SON FOR PREDICTED ADULT HEIGHT' : 'PREDICTED ADULT HEIGHT'}\nUsing a classic algorithm, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, ${noBoneAge ? 'no bone age data' : `bone age ~ ${boneAge} years`}) is: ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). The calculated result is for clinical indications, not predictive, and only applicable to healthy children without special medical conditions. Calculation date: ${new Date().toLocaleDateString('en-US')} - OmniAPH® 8.2.`,
+    resultTextKROnly: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, krPAH: string, krError: string, isTeleconsultation?: boolean) => 
+      `* ${isTeleconsultation ? 'TELECONSULTATION WITH DR. SON FOR PREDICTED ADULT HEIGHT' : 'PREDICTED ADULT HEIGHT'}\nUsing a classic algorithm, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm, krPAH: ${krPAH}cm +/- ${krError}cm` : ''}, no bone age data) predicted by Khamis-Roche. The calculated result is for clinical indications, not predictive, and only applicable to healthy children without special medical conditions. Calculation date: ${new Date().toLocaleDateString('en-US')} - OmniAPH® 8.2.`,
     resultTextAll: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahTW1: string, errorTW1: string, pahRWT: string, errorRWT: string, examDate: string, isTeleconsultation?: boolean) => 
       `* ${isTeleconsultation ? 'TELECONSULTATION WITH DR. SON FOR PREDICTED ADULT HEIGHT' : 'PREDICTED ADULT HEIGHT'}\nUsing multiple classic algorithms, the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, bone age ~ ${boneAge} years) is: ${pahBP}cm +/- 5cm (Bayley-Pinneau), ${pahTW1}cm +/- ${errorTW1}cm (Tanner-Whitehouse Mark I) and ${pahRWT}cm +/- ${errorRWT}cm (Roche-Wainer-Thissen). The calculated result is for periodic monitoring and clinical indications, not predictive. Calculation date: ${new Date().toLocaleDateString('en-US')} - OmniAPH® 8.2.`,
     resultTextBPRWT: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, doctor: string, date: string, pahBP: string, pahRWT: string, errorRWT: string, examDate: string, isTeleconsultation?: boolean) => 

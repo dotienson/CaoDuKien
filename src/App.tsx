@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { translations, Language } from './i18n';
 import { Gender, MenarcheStatus, getCoefficients, calculatePAH, calculateMPH, Coefficients } from './data/twmc';
+import { calculateKhamisRoche } from './data/khamisRoche';
 import { calculateRWT, RWTCoefficient } from './data/rwt';
 import { bpTable } from './bpTable';
 import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown } from 'lucide-react';
@@ -23,6 +24,10 @@ const DateInput = ({ value, onChange, label, className = '' }: { value: string, 
         setMm(m);
         setDd(d);
       }
+    } else {
+      setYyyy('');
+      setMm('');
+      setDd('');
     }
   }, [value]);
 
@@ -257,7 +262,7 @@ function MainApp() {
   const [examDate, setExamDate] = useState(today);
   
   const [ageYears, setAgeYears] = useState<number | ''>('');
-  const [ageMonths, setAgeMonths] = useState<number | ''>(0);
+  const [ageMonths, setAgeMonths] = useState<number | ''>('');
   
   const [currentHeight, setCurrentHeight] = useState('');
   const [fatherHeight, setFatherHeight] = useState('');
@@ -443,6 +448,7 @@ function MainApp() {
   
   let pahResult: { pah: number; error: number } | null = null;
   let bpResult: { pah: number; error: number; fraction: number } | null = null;
+  let krResult: { pah: number; error: number } | null = null;
   let rwtResult: { pah: number; error: number; coefficients: RWTCoefficient } | null = null;
   let usedCoeffs: Coefficients | null = null;
   let noDataError = false;
@@ -484,6 +490,18 @@ function MainApp() {
       }
     }
   }, [ageYears, ageMonths]);
+
+  // Khamis-Roche Calculation
+  if (numCurrentHeight && isValidHeight(numCurrentHeight) && ageYears !== '' && !invalidAgeError && numWeight && mph !== null && numFatherHeight && numMotherHeight) {
+    krResult = calculateKhamisRoche(
+      gender,
+      chronAge,
+      Number(numCurrentHeight),
+      Number(numWeight),
+      Number(numFatherHeight),
+      Number(numMotherHeight)
+    );
+  }
 
   if (numCurrentHeight && isValidHeight(numCurrentHeight) && ageYears !== '' && (numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && !invalidAgeError) {
     if (!isMenarcheValid) {
@@ -559,6 +577,10 @@ function MainApp() {
   
   let conclusions: any[] = [];
   let resultTextStr = '';
+  if (ageYears !== '' && krResult && numBoneAge === '' && !noBoneAge) {
+    resultTextStr = t.resultTextKROnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(krResult.pah), String(krResult.error), isTeleconsultation);
+  }
+
   if ((numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && ageYears !== '') {
     if (isBoneAgeDeviated) {
       if (bpResult) {
@@ -580,6 +602,13 @@ function MainApp() {
       resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate), isTeleconsultation);
     }
 
+    if (resultTextStr && krResult && mph) {
+      const krText = ` krPAH: ${krResult.pah}cm +/- ${krResult.error}cm`;
+      if (resultTextStr.includes(`MPH ${mph}cm`)) {
+        resultTextStr = resultTextStr.replace(`MPH ${mph}cm`, `MPH ${mph}cm, ${krText}`);
+      }
+    }
+    
     if (resultTextStr && (boneXpertPah || boneXpertError || aphv)) {
       const bxSentObj = t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError);
       const bxSentText = `${bxSentObj.methodName}${bxSentObj.midText}${bxSentObj.pah} +/- ${bxSentObj.error}${bxSentObj.endText} `;
@@ -636,10 +665,11 @@ function MainApp() {
   const handleReset = () => {
     setName('');
     setGender('boy');
+    setAgeMode('manual');
     setDob('');
     setExamDate(new Date().toISOString().split('T')[0]);
     setAgeYears('');
-    setAgeMonths(0);
+    setAgeMonths('');
     setCurrentHeight('');
     setFatherHeight('');
     setMotherHeight('');
@@ -896,6 +926,7 @@ function MainApp() {
                 </div>
               </div>
 
+
             </div>
 
             {/* Right Column */}
@@ -915,8 +946,15 @@ function MainApp() {
               
               <div className={`${theme.cardBg} p-3 rounded-xl border ${theme.cardBorder} text-sm flex justify-between items-center shadow-sm`}>
                 <span className={`font-medium ${theme.labelDark}`}>{t.mph}:</span>
-                <span className={`font-bold text-lg ${theme.labelDark}`}>{mph} cm <span className={`text-xs font-normal opacity-70`}>(+/- 8.5)</span></span>
+                <span className={`font-bold text-lg ${theme.labelDark}`}>{mph} cm <span className={`text-xs font-normal opacity-70`}>(±{gender === 'boy' ? 10 : 9})</span></span>
               </div>
+              
+              {krResult && (
+                <div className={`mt-4 ${theme.cardBg} p-3 rounded-xl border ${theme.cardBorder} text-sm flex justify-between items-center shadow-sm`}>
+                  <span className={`font-medium ${theme.labelDark}`}>{lang === 'vi' ? 'Dự kiến theo Khamis-Roche' : 'Khamis-Roche Prediction'}:</span>
+                  <span className={`font-bold text-lg ${theme.labelDark}`}>{krResult.pah} cm <span className={`text-xs font-normal opacity-70`}>(+/- {krResult.error})</span></span>
+                </div>
+              )}
 
               {gender === 'girl' && (
                 <div>
@@ -1199,6 +1237,7 @@ function MainApp() {
           <AnimatePresence>
             {resultTextStr && (
               <motion.div
+                key="result-card"
                 initial={{ opacity: 0, y: 20, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: 'auto' }}
                 exit={{ opacity: 0, y: -20, height: 0 }}
@@ -1378,6 +1417,7 @@ function MainApp() {
               <AnimatePresence>
                 {showLegend && (
                   <motion.div 
+                    key="legend"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
@@ -1413,6 +1453,7 @@ function MainApp() {
                 
                 {showNote && (
                   <motion.div 
+                    key="note"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
