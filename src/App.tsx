@@ -577,9 +577,6 @@ function MainApp() {
   
   let conclusions: any[] = [];
   let resultTextStr = '';
-  if (ageYears !== '' && krResult && numBoneAge === '' && !noBoneAge) {
-    resultTextStr = t.resultTextKROnly(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(krResult.pah), String(krResult.error), isTeleconsultation);
-  }
 
   if ((numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && ageYears !== '') {
     if (isBoneAgeDeviated) {
@@ -602,10 +599,17 @@ function MainApp() {
       resultTextStr = t.resultText(name, genderStr, String(ageYears), String(ageMonths || 0), currentHeight, weight, mph ? String(mph) : '', String(effectiveBoneAge), doctor, formatDate(xrayDate), String(pahResult.pah), String(pahResult.error), formatDate(examDate), isTeleconsultation);
     }
 
+    const isMphFromMotherOnly = !numFatherHeight && numMotherHeight && isValidHeight(numMotherHeight);
+
     if (resultTextStr && krResult && mph) {
       const krText = ` krPAH: ${krResult.pah}cm +/- ${krResult.error}cm`;
       if (resultTextStr.includes(`MPH ${mph}cm`)) {
         resultTextStr = resultTextStr.replace(`MPH ${mph}cm`, `MPH ${mph}cm, ${krText}`);
+      }
+    } else if (resultTextStr && isMphFromMotherOnly && mph) {
+      const suffix = lang === 'vi' ? ' - tính từ chiều cao mẹ' : ' - calculated from mother\'s height';
+      if (resultTextStr.includes(`MPH ${mph}cm`)) {
+        resultTextStr = resultTextStr.replace(`MPH ${mph}cm`, `MPH ${mph}cm${suffix}`);
       }
     }
     
