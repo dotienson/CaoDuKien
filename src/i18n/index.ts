@@ -139,10 +139,10 @@ export const translations = {
     legendAndCoeffs: "Chú thích và Hệ số",
     labelBoneXpert: "BoneXpert PAH 3.1",
     labelAphv: "Đỉnh tăng cao (APHV)",
-    examDatePrefix: "Ngày khám:",
+    calcResultPrefix: "Kết quả tính phục vụ",
     generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => ({
-      methodName: 'Thuật toán BoneXpert AHP 3.1',
-      midText: ` (Visiana) dự đoán chiều cao trưởng thành khoảng `,
+      methodName: 'Thuật toán BX AHP 3.1',
+      midText: ` (Visiana, 2025) dự đoán chiều cao trưởng thành khoảng `,
       pah: bxPah || '...',
       error: bxErr || '...',
       endText: ` cm (AsiChi), đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi (Zurich LS).`
@@ -285,10 +285,10 @@ export const translations = {
     legendAndCoeffs: "Legend & Coefficients",
     labelBoneXpert: "BoneXpert PAH 3.1",
     labelAphv: "Age at Peak Height Velocity (APHV)",
-    examDatePrefix: "Exam date:",
+    calcResultPrefix: "The calculated result",
     generateBoneXpertSent: (aphvX: string, bxPah: string, bxErr: string) => ({
-      methodName: 'BoneXpert AHP 3.1',
-      midText: ` (Visiana) algorithm predicts adult height around `,
+      methodName: 'BX AHP 3.1',
+      midText: ` (Visiana, 2025) algorithm predicts adult height around `,
       pah: bxPah || '...',
       error: bxErr || '...',
       endText: ` cm (AsiChi reference), APHV at ${aphvX || '...'} years (Zurich LS).`

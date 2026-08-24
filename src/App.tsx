@@ -583,8 +583,8 @@ function MainApp() {
     if (resultTextStr && (boneXpertPah || boneXpertError || aphv)) {
       const bxSentObj = t.generateBoneXpertSent(aphv, boneXpertPah, boneXpertError);
       const bxSentText = `${bxSentObj.methodName}${bxSentObj.midText}${bxSentObj.pah} +/- ${bxSentObj.error}${bxSentObj.endText} `;
-      if (resultTextStr.includes(t.examDatePrefix)) {
-        resultTextStr = resultTextStr.replace(t.examDatePrefix, bxSentText + t.examDatePrefix);
+      if (resultTextStr.includes(t.calcResultPrefix)) {
+        resultTextStr = resultTextStr.replace(t.calcResultPrefix, bxSentText + t.calcResultPrefix);
       }
     }
 
