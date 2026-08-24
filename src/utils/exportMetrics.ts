@@ -423,10 +423,14 @@ export async function exportDocx(
               spacing: { before: 120, after: 60 },
             }),
             new Paragraph({
-              text: 'Biểu đồ: Dự kiến chiều cao trưởng thành (PolyPredict APH - Dr. Do Tien Son)',
+              children: [
+                new TextRun({
+                  text: `Kết quả tạo từ OmniAPH® 8.2 - Dr.Son ngày ${new Date().toLocaleDateString('vi-VN')}`,
+                  italics: true,
+                  size: 20
+                })
+              ],
               alignment: AlignmentType.CENTER,
-              italics: true,
-              style: 'Caption',
               spacing: { before: 60, after: 120 }
             })
           ] : []),
@@ -473,7 +477,7 @@ export async function exportDocx(
     const today = new Date();
     const dateStr = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getFullYear()}`;
     const patientName = patientData.name ? patientData.name.trim() : 'Unknown Name';
-    saveAs(blob, `PolyPredict APH Report ${dateStr} ${patientName} Dr Do Tien Son.docx`);
+    saveAs(blob, `OmniAPH 8.2 Report ${dateStr} ${patientName} Dr Do Tien Son.docx`);
   } catch (error) {
     console.error("Error exporting DOCX:", error);
     alert("Có lỗi xảy ra khi xuất báo cáo DOCX. Vui lòng thử lại.");

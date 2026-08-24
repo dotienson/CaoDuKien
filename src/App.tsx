@@ -201,10 +201,10 @@ export default function App() {
             <div className="text-center mb-8">
               <h1 className="font-bold text-gray-900 tracking-tight">
                 <span className="block md:hidden text-2xl">
-                  PolyPredict APH Dr.Son
+                  OmniAPH® Dr.Son
                 </span>
                 <span className="hidden md:block text-3xl">
-                  PolyPredict APH version 26.8<br/>
+                  OmniAPH® 8.2<br/>
                   <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
                 </span>
               </h1>
@@ -778,10 +778,10 @@ function MainApp() {
               <div>
                 <h1 className={`font-bold tracking-tight ${primaryColor} flex items-center justify-center md:justify-start gap-3`}>
                   <span className="block md:hidden text-2xl">
-                    PolyPredict APH Dr.Son
+                    OmniAPH® Dr.Son
                   </span>
                   <span className="hidden md:block text-3xl">
-                    PolyPredict APH version 26.8<br/>
+                    OmniAPH® 8.2<br/>
                     <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
                   </span>
                 </h1>
