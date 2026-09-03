@@ -126,6 +126,7 @@ const DateInput = ({ value, onChange, label, className = '' }: { value: string, 
 };
 
 export default function App() {
+  const [logoError, setLogoError] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -201,18 +202,10 @@ export default function App() {
           transition={{ duration: 0.3, ease: "easeOut" }}
           className="w-full max-w-[350px] mx-4"
         >
-          <div className="bg-white px-10 pt-10 pb-8 border border-gray-300 flex flex-col items-center">
+          <div className="bg-white px-8 pt-8 pb-8 border border-gray-300 flex flex-col items-center">
             
-            <div className="text-center mb-8">
-              <h1 className="font-bold text-gray-900 tracking-tight">
-                <span className="block md:hidden text-2xl">
-                  OmniAPH® Dr.Son
-                </span>
-                <span className="hidden md:block text-3xl">
-                  OmniAPH® 8.2<br/>
-                  <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
-                </span>
-              </h1>
+            <div className="text-center mb-6 w-full flex justify-center">
+              <img src="/logo.png" alt="Logo" className="h-40 w-auto max-w-full mx-auto object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; setLogoError(true); }} />
             </div>
             
             <form onSubmit={handleLogin} className="w-full space-y-3">
@@ -249,6 +242,7 @@ export default function App() {
 }
 
 function MainApp() {
+  const [logoError, setLogoError] = useState(false);
   const [lang, setLang] = useState<Language>('vi');
   const t = translations[lang];
 
@@ -803,21 +797,26 @@ function MainApp() {
         </div>
 
         {/* Main Content to Export */}
-        <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:p-10 relative">
+        <div className="bg-white/85 backdrop-blur-2xl rounded-3xl shadow-xl border border-white/40 p-4 md:px-8 md:py-6 relative">
           <div className="absolute inset-1.5 md:inset-2 border-2 border-gray-300/30 rounded-[1.25rem] md:rounded-[1.5rem] pointer-events-none"></div>
           
           {/* Header */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8 border-b border-gray-200/50 pb-6">
-            <div className="md:col-span-7 text-center md:text-left flex flex-col md:flex-row items-center md:items-start gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 border-b border-gray-200/50 pb-4">
+            <div className="md:col-span-7 text-center md:text-left flex flex-col md:flex-row items-center md:items-start gap-2">
               <div>
-                <h1 className={`font-bold tracking-tight ${primaryColor} flex items-center justify-center md:justify-start gap-3`}>
-                  <span className="block md:hidden text-2xl">
-                    OmniAPH® Dr.Son
-                  </span>
-                  <span className="hidden md:block text-3xl">
-                    OmniAPH® 8.2<br/>
-                    <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
-                  </span>
+                <h1 className={`font-bold tracking-tight ${primaryColor} flex flex-col md:flex-row items-center justify-center md:justify-start gap-2`}>
+                  <img src="/logo.png" alt="Logo" className="h-20 md:h-28 w-auto object-contain max-w-full" onError={(e) => { e.currentTarget.style.display = 'none'; setLogoError(true); }} />
+                  {logoError && (
+                    <>
+                      <span className="block md:hidden text-2xl">
+                        OmniAPH® Dr.Son
+                      </span>
+                      <span className="hidden md:block text-3xl">
+                        OmniAPH® 8.2<br/>
+                        <span className="text-xl font-medium opacity-80 mt-1 block">Tác giả: Bác sĩ Đỗ Tiến Sơn</span>
+                      </span>
+                    </>
+                  )}
                 </h1>
                 <p className={`font-medium mt-1 ${primaryColor} opacity-80 block md:hidden`}>{t.subtitle}</p>
               </div>
@@ -830,7 +829,7 @@ function MainApp() {
           </div>
 
           {/* Form Grid */}
-          <div className={`${theme.cardBg} px-4 md:px-6 pt-8 pb-6 rounded-2xl border ${theme.cardBorder} relative shadow-sm mb-8 mt-6`}>
+          <div className={`${theme.cardBg} px-4 md:px-6 pt-6 pb-6 rounded-2xl border ${theme.cardBorder} relative shadow-sm mb-6 mt-2`}>
             <div className={`absolute -top-3 left-6 px-3 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded-full border ${theme.cardBorder} ${theme.labelDark} shadow-sm`}>
               {t.adminInfoTitle}
             </div>

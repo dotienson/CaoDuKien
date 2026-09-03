@@ -147,6 +147,34 @@ export async function exportDocx(
   t: any
 ) {
   try {
+    let logoBuffer: ArrayBuffer | null = null;
+    let logoWidth = 100;
+    let logoHeight = 100;
+    try {
+      const response = await fetch('/logo.png');
+      if (response.ok) {
+        logoBuffer = await response.arrayBuffer();
+        const blob = new Blob([logoBuffer], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.src = url;
+        await new Promise<void>((resolve) => {
+          img.onload = () => {
+            const maxW = 300; 
+            const maxH = 150; 
+            const ratio = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1);
+            logoWidth = Math.round(img.naturalWidth * ratio);
+            logoHeight = Math.round(img.naturalHeight * ratio);
+            resolve();
+          };
+          img.onerror = () => resolve();
+        });
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.warn("Could not load logo for export", e);
+    }
+
     const doc = new Document({
       styles: {
         default: {
@@ -194,13 +222,13 @@ export async function exportDocx(
               left: 1800,
             },
             borders: {
+              pageBorderLeft: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
+              pageBorderRight: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
+              pageBorderTop: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
+              pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
               pageBorders: {
                 display: PageBorderDisplay.ALL_PAGES,
                 zOrder: PageBorderZOrder.FRONT,
-                left: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
-                right: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
-                top: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
-                bottom: { style: BorderStyle.SINGLE, size: 12, color: "808080", space: 24 },
               }
             }
           }
@@ -223,28 +251,33 @@ export async function exportDocx(
           })
         },
         children: [
+          ...(logoBuffer ? [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new ImageRun({
+                  data: logoBuffer,
+                  transformation: {
+                    width: logoWidth,
+                    height: logoHeight,
+                  },
+                  type: 'png',
+                }),
+              ],
+              spacing: { after: 120 },
+            })
+          ] : []),
           new Paragraph({
             children: [
               new TextRun({
-                text: t.title,
-                size: 40,
+                text: t.title === "OmniAPH® - Bác sĩ Đỗ Tiến Sơn" ? "BÁO CÁO DỰ KIẾN CHIỀU CAO CUỐI" : "PREDICTED ADULT HEIGHT REPORT",
+                size: 32,
                 bold: true,
                 color: "1E3A8A"
               })
             ],
             alignment: AlignmentType.CENTER,
-            spacing: { before: 120, after: 60 },
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: t.subtitle === "Dự đoán APH đa mô thức" ? "Dự đoán chiều cao khi trưởng thành đa mô thức" : t.subtitle,
-                size: 28,
-                color: "1E3A8A"
-              })
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 60 },
+            spacing: { before: 120, after: 120 },
           }),
           new Paragraph({ text: '' }), // Spacing
 
