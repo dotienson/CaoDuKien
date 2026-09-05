@@ -31,7 +31,7 @@ export const translations = {
     exportPdf: "Xuất PDF",
     footerText: "Ứng dụng được BS. Đỗ Tiến Sơn phát triển dựa trên công thức Tanner – Whitehouse (1975), Roche-Wainer-Thissen (1975) và Bayley-Pinneau (1953) và Số liệu của Tổng điều tra Dinh dưỡng 2019 - 2020 (Việt Nam)",
     noteTitle: "Chú ý",
-    noteContent: "Kết quả phụ thuộc nhiều vào kết quả tuổi xương, xu hướng biến đổi trong tương lai và nhiều yếu tố sức khoẻ - môi trường khác. Tất cả các công thức tính này đều chưa có dữ liệu tương tự cho quần thể người Việt Nam đương đại, các công thức đều dựa trên số liệu từ các nghiên cứu của quần thể trẻ Mỹ, da trắng. Kết quả chỉ phục vụ cho công tác tư vấn và hỗ trợ đưa ra quyết định lâm sàng. Không mang tính tiên đoán tương lai.",
+    noteContent: "Kết quả phụ thuộc nhiều vào kết quả tuổi xương, xu hướng biến đổi trong tương lai và nhiều yếu tố sức khoẻ - môi trường khác. Tất cả các công thức tính này đều chưa có dữ liệu tương tự cho quần thể người Việt Nam đương đại, các công thức đều dựa trên số liệu từ các nghiên cứu của quần thể trẻ Mỹ, da trắng. Kết quả chỉ phục vụ cho công tác tư vấn và hỗ trợ đưa ra quyết định lâm sàng. Các kết quả này không mang tính tiên đoán tương lai và thay đổi theo tuổi xương, nhân trắc từng thời điểm.",
     link: "dotienson.com/app",
     useTW2: "TW II",
     useRWT: "Sử dụng Roche-Wainer-Thissen",
