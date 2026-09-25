@@ -321,7 +321,12 @@ export async function exportDocx(
                         new Paragraph({
                           children: [
                             new TextRun({ text: 'Kinh nguyệt: ', bold: true, size: 22 }),
-                            new TextRun({ text: patientData.menarche === 'yes' ? 'Đã có' : 'Chưa', size: 22 }),
+                            new TextRun({ 
+                              text: (patientData.menarche === 'post' || patientData.menarche === 'yes') 
+                                ? (t?.hasMenarche || 'Đã có kinh nguyệt') 
+                                : (t?.noMenarche || 'Chưa có kinh nguyệt'), 
+                              size: 22 
+                            }),
                           ]
                         })
                       ] : []),
