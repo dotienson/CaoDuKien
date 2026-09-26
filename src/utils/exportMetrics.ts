@@ -221,7 +221,7 @@ export async function exportDocx(
                 text: t.title === "OmniAPH® - Bác sĩ Đỗ Tiến Sơn" ? "KẾT QUẢ TÍNH CHIỀU CAO TRƯỞNG THÀNH" : "PREDICTED ADULT HEIGHT REPORT",
                 size: 32,
                 bold: true,
-                color: "1E3A8A"
+                color: "000000"
               })
             ],
             alignment: AlignmentType.CENTER,
@@ -236,10 +236,10 @@ export async function exportDocx(
               type: WidthType.PERCENTAGE,
             },
             borders: {
-              top: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
-              bottom: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
-              left: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
-              right: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
+              top: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+              bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+              left: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+              right: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
               insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
               insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
             },
@@ -248,12 +248,12 @@ export async function exportDocx(
                 children: [
                   new TableCell({
                     columnSpan: 2,
-                    shading: { fill: "E0E7FF" },
+                    shading: { fill: "FFFFFF" },
                     margins: { top: 100, bottom: 100, left: 200, right: 200 },
                     children: [
                       new Paragraph({
                         children: [
-                          new TextRun({ text: t.adminInfoTitle || 'THÔNG TIN HÀNH CHÍNH', bold: true, size: 24, color: "1E3A8A" })
+                          new TextRun({ text: t.adminInfoTitle || 'THÔNG TIN HÀNH CHÍNH', bold: true, size: 24, color: "000000" })
                         ],
                         alignment: AlignmentType.CENTER
                       })
@@ -266,7 +266,7 @@ export async function exportDocx(
                   new TableCell({
                     width: { size: 50, type: WidthType.PERCENTAGE },
                     margins: { top: 200, bottom: 200, left: 200, right: 200 },
-                    shading: { fill: "F8FAFC" },
+                    shading: { fill: "FFFFFF" },
                     children: [
                       new Paragraph({
                         children: [
@@ -297,7 +297,7 @@ export async function exportDocx(
                   new TableCell({
                     width: { size: 50, type: WidthType.PERCENTAGE },
                     margins: { top: 200, bottom: 200, left: 200, right: 200 },
-                    shading: { fill: "F8FAFC" },
+                    shading: { fill: "FFFFFF" },
                     children: [
                       new Paragraph({
                         children: [
@@ -346,22 +346,23 @@ export async function exportDocx(
               type: WidthType.PERCENTAGE,
             },
             borders: {
-              top: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
-              bottom: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
-              left: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
-              right: { style: BorderStyle.SINGLE, size: 2, color: "1E3A8A" },
+              top: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+              bottom: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+              left: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
+              right: { style: BorderStyle.SINGLE, size: 6, color: "000000" },
               insideHorizontal: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
+              insideVertical: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" },
             },
             rows: [
               new TableRow({
                 children: [
                   new TableCell({
-                    shading: { fill: "E0E7FF" },
+                    shading: { fill: "FFFFFF" },
                     margins: { top: 100, bottom: 100, left: 200, right: 200 },
                     children: [
                       new Paragraph({
                         children: [
-                          new TextRun({ text: t.conclusionTitle || 'KẾT LUẬN', bold: true, size: 24, color: "1E3A8A" })
+                          new TextRun({ text: t.conclusionTitle || 'KẾT LUẬN', bold: true, size: 24, color: "000000" })
                         ],
                         alignment: AlignmentType.CENTER
                       })
@@ -373,7 +374,7 @@ export async function exportDocx(
                 children: [
                   new TableCell({
                     margins: { top: 200, bottom: 200, left: 200, right: 200 },
-                    shading: { fill: "F8FAFC" },
+                    shading: { fill: "FFFFFF" },
                     children: conclusions.map(c => new Paragraph({
                       bullet: { level: 0 },
                       children: [
