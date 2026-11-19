@@ -1,6 +1,6 @@
 export const translations = {
   vi: {
-    title: "PAH Calc by Dr.Son",
+    title: "PAH Calc® by Dr.Son",
     subtitle: "Tính chiều cao trưởng thành",
     subtitleNote: "BS. Đỗ Tiến Sơn - Bệnh viện Đa khoa Tâm Anh\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nUỷ viên Uỷ ban Đào tạo - Hội Nội tiết Nhi châu Âu",
     espeMember: "",
@@ -162,7 +162,7 @@ export const translations = {
       `* ${isTeleconsultation ? 'HỘI CHẨN TỪ XA VỚI BÁC SĨ SƠN VỀ CHIỀU CAO KHI TRƯỞNG THÀNH' : 'DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH'}\nBằng Mô hình AHP Thodberg-Martin (2012) (${popLabel}), chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pah}cm +/- ${error}cm (95% CI: ${ci95[0]} - ${ci95[1]}cm). Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán. Kết quả tính ngày: ${new Date().toLocaleDateString('vi-VN')} - OmniAPH® 8.2.`,
   },
   en: {
-    title: "PAH Calc by Dr.Son",
+    title: "PAH Calc® by Dr.Son",
     subtitle: "Tính chiều cao trưởng thành",
     subtitleNote: "Dr. Do Tien Son - Tam Anh General Hospital\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nMember of the Training Committee - ESPE",
     espeMember: "",

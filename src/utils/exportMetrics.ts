@@ -76,6 +76,7 @@ export interface ClinicalReportPayload {
   bxV2Result?: BxV3PredictionResult | null;
   bxV2Enabled?: boolean;
   conclusionText: string;
+  lang?: 'vi' | 'en';
   chartData: Array<{
     method: string;
     fullName?: string;
@@ -99,7 +100,7 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
-        const targetW = 360;
+        const targetW = 480;
         const targetH = Math.round((targetW / img.width) * img.height);
         const canvas = document.createElement('canvas');
         canvas.width = targetW;
@@ -110,22 +111,54 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
           return;
         }
         ctx.drawImage(img, 0, 0, targetW, targetH);
-        // Remove near-white background so the initial signature blends cleanly
+        // Remove near-white background and find tight ink bounding box
         const imageData = ctx.getImageData(0, 0, targetW, targetH);
         const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const brightness = (r + g + b) / 3;
-          if (brightness > 235) {
-            data[i + 3] = 0;
-          } else if (brightness > 200) {
-            data[i + 3] = Math.round(((235 - brightness) / 35) * 255);
+        let minX = targetW;
+        let minY = targetH;
+        let maxX = 0;
+        let maxY = 0;
+
+        for (let y = 0; y < targetH; y++) {
+          for (let x = 0; x < targetW; x++) {
+            const idx = (y * targetW + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const brightness = (r + g + b) / 3;
+            if (brightness > 235) {
+              data[idx + 3] = 0;
+            } else if (brightness > 200) {
+              data[idx + 3] = Math.round(((235 - brightness) / 35) * 255);
+            }
+            if (data[idx + 3] > 20) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
           }
         }
         ctx.putImageData(imageData, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
+
+        // Crop tightly around the signature ink so it aligns flush to the right margin
+        const pad = 2;
+        const cropX = Math.max(0, minX - pad);
+        const cropY = Math.max(0, minY - pad);
+        const cropW = maxX >= minX ? Math.min(targetW - cropX, maxX - minX + 1 + pad * 2) : targetW;
+        const cropH = maxY >= minY ? Math.min(targetH - cropY, maxY - minY + 1 + pad * 2) : targetH;
+
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = cropW;
+        croppedCanvas.height = cropH;
+        const croppedCtx = croppedCanvas.getContext('2d');
+        if (!croppedCtx) {
+          resolve(null);
+          return;
+        }
+        croppedCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+        const dataUrl = croppedCanvas.toDataURL('image/png');
         const base64 = dataUrl.split(',')[1] || '';
         const binaryStr = atob(base64);
         const uint8Array = new Uint8Array(binaryStr.length);
@@ -135,8 +168,8 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
         resolve({
           uint8Array,
           dataUrl,
-          width: targetW,
-          height: targetH,
+          width: cropW,
+          height: cropH,
         });
       } catch {
         resolve(null);
@@ -147,15 +180,22 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
   });
 }
 
-const METHOD_LEGEND_MAP: Record<string, string> = {
-  TW1: 'TW1: Tanner-Whitehouse Mark I (1975)',
-  BP: 'BP: Bayley-Pinneau (1953)',
-  RWT: 'RWT: Roche-Wainer-Thissen (1975)',
-  'BoneXpert (AsiChi)': 'BX 3.1: BoneXpert AHP 3.1 (AsiChi)',
-  'AHP Thodberg-Martin (VN)': 'AHP TM (VN): Thodberg-Martin 2012 (NIN FH VN 2020)',
-  'AHP Thodberg-Martin (EU)': 'AHP TM (EU): Thodberg-Martin 2012 (Châu Âu - Zurich)',
-  'AHP Thodberg-Martin (Custom)': 'AHP TM (Custom): Thodberg-Martin 2012 (Tùy chỉnh)',
-};
+function getMethodLegendMap(lang: 'vi' | 'en' = 'vi'): Record<string, string> {
+  const isEn = lang === 'en';
+  return {
+    TW1: 'TW1: Tanner-Whitehouse Mark I (1975)',
+    BP: 'BP: Bayley-Pinneau (1953)',
+    RWT: 'RWT: Roche-Wainer-Thissen (1975)',
+    'BoneXpert (AsiChi)': 'BX 3.1: BoneXpert AHP 3.1 (AsiChi)',
+    'AHP Thodberg-Martin (VN)': 'AHP TM (VN): Thodberg-Martin 2012 (NIN FH VN 2020)',
+    'AHP Thodberg-Martin (EU)': isEn
+      ? 'AHP TM (EU): Thodberg-Martin 2012 (Caucasian - Zurich)'
+      : 'AHP TM (EU): Thodberg-Martin 2012 (Châu Âu - Zurich)',
+    'AHP Thodberg-Martin (Custom)': isEn
+      ? 'AHP TM (Custom): Thodberg-Martin 2012 (Custom)'
+      : 'AHP TM (Custom): Thodberg-Martin 2012 (Tùy chỉnh)',
+  };
+}
 
 function drawMarker(
   ctx: CanvasRenderingContext2D,
@@ -214,8 +254,11 @@ function generateForestPlotImage(
     error: number;
     style?: { lineDash?: string; markerType?: string };
   }>,
-  mphVal?: number | null
+  mphVal?: number | null,
+  lang: 'vi' | 'en' = 'vi'
 ): ForestPlotRenderResult {
+  const isEn = lang === 'en';
+  const methodLegendMap = getMethodLegendMap(lang);
   const canvas = document.createElement('canvas');
   const scale = 2; // High-DPI rendering for crisp A4 print
   const logicalWidth = 820;
@@ -238,7 +281,9 @@ function generateForestPlotImage(
       ? [
           {
             method: 'MPH',
-            fullName: 'MPH: Dải tiềm năng di truyền',
+            fullName: isEn
+              ? 'MPH: Mid-Parental Height Target Range'
+              : 'MPH: Dải tiềm năng di truyền',
             pah: mphVal!,
             error: 8.5,
             style: { lineDash: '10,4', markerType: 'diamond' },
@@ -254,7 +299,7 @@ function generateForestPlotImage(
     markerType?: string;
     lineDash?: string;
   }> = plotRows.map((d) => ({
-    label: d.fullName || METHOD_LEGEND_MAP[d.method] || d.method,
+    label: d.fullName || methodLegendMap[d.method] || d.method,
     markerType: d.style?.markerType || 'circle',
     lineDash: d.style?.lineDash || '',
   }));
@@ -316,12 +361,16 @@ function generateForestPlotImage(
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, logicalWidth, logicalHeight);
 
-  // Title inside chart: "BIỂU ĐỒ SO SÁNH CHIỀU CAO DỰ KIẾN"
+  // Title inside chart
   ctx.font = 'bold 14px Arial, sans-serif';
   ctx.fillStyle = '#000000';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText('BIỂU ĐỒ SO SÁNH CHIỀU CAO DỰ KIẾN', logicalWidth / 2, 10);
+  ctx.fillText(
+    isEn ? 'PREDICTED ADULT HEIGHT COMPARISON CHART' : 'BIỂU ĐỒ SO SÁNH CHIỀU CAO DỰ KIẾN',
+    logicalWidth / 2,
+    10
+  );
 
   const allLows = plotRows.map((d) => d.pah - d.error);
   const allHighs = plotRows.map((d) => d.pah + d.error);
@@ -378,12 +427,16 @@ function generateForestPlotImage(
     ctx.restore();
   }
 
-  // Larger X-axis title: "Chiều cao dự kiến trưởng thành (cm)"
+  // Larger X-axis title
   ctx.font = 'bold 14.5px Arial, sans-serif';
   ctx.fillStyle = '#000000';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText('Chiều cao dự kiến trưởng thành (cm)', marginLeft + plotWidth / 2, plotBottom + 26);
+  ctx.fillText(
+    isEn ? 'Predicted Adult Height (cm)' : 'Chiều cao dự kiến trưởng thành (cm)',
+    marginLeft + plotWidth / 2,
+    plotBottom + 26
+  );
 
   // Draw each plot row (MPH on top, then selected methods)
   plotRows.forEach((d, i) => {
@@ -513,13 +566,21 @@ function formatDateVN(dateStr?: string): string {
   return dateStr;
 }
 
-function getSafeFileName(patientName: string | undefined, ext: 'docx' | 'pdf'): string {
+function getSafeFileName(
+  patientName: string | undefined,
+  ext: 'docx' | 'pdf',
+  lang: 'vi' | 'en' = 'vi'
+): string {
   const today = new Date();
   const dateStr = `${today.getDate().toString().padStart(2, '0')}-${(today.getMonth() + 1)
     .toString()
     .padStart(2, '0')}-${today.getFullYear()}`;
-  const cleanName = patientName && patientName.trim() ? patientName.trim() : 'BenhNhi';
-  return `Bao_Cao_PAH_${cleanName}_${dateStr}_BS_Do_Tien_Son.${ext}`;
+  const isEn = lang === 'en';
+  const cleanName =
+    patientName && patientName.trim() ? patientName.trim() : isEn ? 'Patient' : 'BenhNhi';
+  return isEn
+    ? `PAH_Report_${cleanName}_${dateStr}_Dr_Do_Tien_Son.${ext}`
+    : `Bao_Cao_PAH_${cleanName}_${dateStr}_BS_Do_Tien_Son.${ext}`;
 }
 
 /**
@@ -527,20 +588,27 @@ function getSafeFileName(patientName: string | undefined, ext: 'docx' | 'pdf'): 
  * (Ngăn cách bằng dấu "," và dấu ";", KHÔNG dùng dấu "|", canh lề 2 bên Justified)
  */
 function buildAllModelsMetricsParagraphText(payload: ClinicalReportPayload): string | null {
-  const { patientData, bpFraction, tw1Coeffs, rwtCoeffs, bxV2Enabled, bxV2Result } = payload;
+  const { patientData, bpFraction, tw1Coeffs, rwtCoeffs, bxV2Enabled, bxV2Result, lang = 'vi' } = payload;
   if (patientData.hideCoefficients) {
     return null;
   }
 
+  const isEn = lang === 'en';
   const segments: string[] = [];
 
   if (bpFraction !== null && bpFraction !== undefined) {
-    segments.push(`Bayley-Pinneau (1953): hệ số tỷ lệ trưởng thành fraction = ${bpFraction}`);
+    segments.push(
+      isEn
+        ? `Bayley-Pinneau (1953): mature height fraction = ${bpFraction}`
+        : `Bayley-Pinneau (1953): hệ số tỷ lệ trưởng thành fraction = ${bpFraction}`
+    );
   }
 
   if (tw1Coeffs) {
     segments.push(
-      `Tanner-Whitehouse Mark I (1975): α = ${tw1Coeffs.alpha}, β = ${tw1Coeffs.beta}, γ = ${tw1Coeffs.gamma}, hằng số c = ${tw1Coeffs.c}`
+      isEn
+        ? `Tanner-Whitehouse Mark I (1975): α = ${tw1Coeffs.alpha}, β = ${tw1Coeffs.beta}, γ = ${tw1Coeffs.gamma}, constant c = ${tw1Coeffs.c}`
+        : `Tanner-Whitehouse Mark I (1975): α = ${tw1Coeffs.alpha}, β = ${tw1Coeffs.beta}, γ = ${tw1Coeffs.gamma}, hằng số c = ${tw1Coeffs.c}`
     );
   }
 
@@ -553,12 +621,25 @@ function buildAllModelsMetricsParagraphText(payload: ClinicalReportPayload): str
   if (bxV2Enabled && bxV2Result) {
     const im = bxV2Result.intermediate_metrics;
     const preds = bxV2Result.predictions;
+    const popShortLocalized =
+      bxV2Result.inputs.population_mode === 'vietnam'
+        ? 'NIN FH VN 2020'
+        : bxV2Result.inputs.population_mode === 'caucasian'
+        ? isEn
+          ? 'Caucasian - Zurich'
+          : 'Chuẩn Châu Âu - Zurich'
+        : isEn
+        ? 'Custom Population'
+        : 'Quần thể Tùy chỉnh';
+
     const tmParts: string[] = [
       `gp = ${im.growth_potential_pct}%`,
       `H_raw = ${im.h_raw_cm} cm`,
-      `CA - BA = ${im.ba_delay_years > 0 ? '+' : ''}${im.ba_delay_years} năm`,
+      `CA - BA = ${im.ba_delay_years > 0 ? '+' : ''}${im.ba_delay_years} ${isEn ? 'yrs' : 'năm'}`,
       `w_pop = ${im.w_pop}`,
-      `H_pred (nhóm dân cư) = ${preds.ahp_using_population_hpred.height_cm} ± ${preds.ahp_using_population_hpred.rmse_cm} cm`,
+      isEn
+        ? `H_pred (population) = ${preds.ahp_using_population_hpred.height_cm} ± ${preds.ahp_using_population_hpred.rmse_cm} cm`
+        : `H_pred (nhóm dân cư) = ${preds.ahp_using_population_hpred.height_cm} ± ${preds.ahp_using_population_hpred.rmse_cm} cm`,
     ];
     if (preds.ahp_using_parents_hpredp) {
       tmParts.push(
@@ -568,11 +649,15 @@ function buildAllModelsMetricsParagraphText(payload: ClinicalReportPayload): str
     }
     if (preds.ahp_using_menarche_hpredm) {
       tmParts.push(
-        `H_predM (kinh nguyệt) = ${preds.ahp_using_menarche_hpredm.height_cm} ± ${preds.ahp_using_menarche_hpredm.rmse_cm} cm`
+        isEn
+          ? `H_predM (menarche) = ${preds.ahp_using_menarche_hpredm.height_cm} ± ${preds.ahp_using_menarche_hpredm.rmse_cm} cm`
+          : `H_predM (kinh nguyệt) = ${preds.ahp_using_menarche_hpredm.height_cm} ± ${preds.ahp_using_menarche_hpredm.rmse_cm} cm`
       );
     }
     segments.push(
-      `Mô hình Thodberg-Martin (2012) (${bxV2Result.inputs.population_short}, Hpop = ${bxV2Result.inputs.h_pop} cm): ${tmParts.join(', ')}`
+      isEn
+        ? `Thodberg-Martin (2012) Model (${popShortLocalized}, Hpop = ${bxV2Result.inputs.h_pop} cm): ${tmParts.join(', ')}`
+        : `Mô hình Thodberg-Martin (2012) (${popShortLocalized}, Hpop = ${bxV2Result.inputs.h_pop} cm): ${tmParts.join(', ')}`
     );
   }
 
@@ -601,11 +686,12 @@ function filterReportConclusionLines(conclusionText: string): string[] {
 
 export async function exportDocx(payload: ClinicalReportPayload) {
   try {
-    const { patientData, summaryRows, conclusionText, chartData } = payload;
+    const { patientData, summaryRows, conclusionText, chartData, lang = 'vi' } = payload;
+    const isEn = lang === 'en';
     const numericMph =
       patientData.mph && !isNaN(Number(patientData.mph)) ? Number(patientData.mph) : null;
     const forestPlot =
-      chartData && chartData.length > 0 ? generateForestPlotImage(chartData, numericMph) : null;
+      chartData && chartData.length > 0 ? generateForestPlotImage(chartData, numericMph, lang) : null;
     const signatureImg = patientData.digitalSign ? await loadSignatureImage() : null;
 
     const blackBoxBorders = {
@@ -630,30 +716,52 @@ export async function exportDocx(payload: ClinicalReportPayload) {
       !patientData.noBoneAge &&
       patientData.caMinusBa !== null &&
       patientData.caMinusBa !== undefined
-        ? `${patientData.caMinusBa > 0 ? '+' : ''}${patientData.caMinusBa} năm${
-            patientData.estimatedAphv !== null && patientData.estimatedAphv !== undefined
-              ? `  ;  APHV dự kiến: ~ ${patientData.estimatedAphv} tuổi`
-              : ''
-          }`
+        ? isEn
+          ? `${patientData.caMinusBa > 0 ? '+' : ''}${patientData.caMinusBa} yrs${
+              patientData.estimatedAphv !== null && patientData.estimatedAphv !== undefined
+                ? `  ;  Estimated APHV: ~ ${patientData.estimatedAphv} yrs`
+                : ''
+            }`
+          : `${patientData.caMinusBa > 0 ? '+' : ''}${patientData.caMinusBa} năm${
+              patientData.estimatedAphv !== null && patientData.estimatedAphv !== undefined
+                ? `  ;  APHV dự kiến: ~ ${patientData.estimatedAphv} tuổi`
+                : ''
+            }`
         : '---';
 
-    // Bỏ BMI ở Box 1 theo yêu cầu
-    const anthropometryDisplay = `Trẻ cao ${patientData.currentHeight} cm${
-      patientData.weight ? `, nặng ${patientData.weight} kg` : ''
-    }`;
+    const anthropometryDisplay = isEn
+      ? `Height ${patientData.currentHeight} cm${
+          patientData.weight ? `, Weight ${patientData.weight} kg` : ''
+        }`
+      : `Trẻ cao ${patientData.currentHeight} cm${
+          patientData.weight ? `, nặng ${patientData.weight} kg` : ''
+        }`;
 
     const menarcheDisplay =
       patientData.gender === 'girl'
         ? patientData.menarche === 'post' || patientData.menarche === 'yes'
-          ? `Đã có kinh nguyệt${
-              patientData.menarcheHeight
-                ? ` (chiều cao khi có chu kì đầu tiên: ${patientData.menarcheHeight} cm)`
-                : ''
-            }`
+          ? isEn
+            ? `Postmenarcheal${
+                patientData.menarcheHeight
+                  ? ` (height at first cycle: ${patientData.menarcheHeight} cm)`
+                  : ''
+              }`
+            : `Đã có kinh nguyệt${
+                patientData.menarcheHeight
+                  ? ` (chiều cao khi có chu kì đầu tiên: ${patientData.menarcheHeight} cm)`
+                  : ''
+              }`
+          : isEn
+          ? 'Premenarcheal'
           : 'Chưa có kinh nguyệt'
         : null;
 
     const allMetricsText = buildAllModelsMetricsParagraphText(payload);
+
+    const footerPrefix = isEn ? 'Note: ' : 'Lưu ý: ';
+    const footerBodyText = isEn
+      ? 'Predicted results depend on skeletal maturity at X-ray assessment, genetic potential, and nutritional-endocrine factors. This report supports periodic growth monitoring and specialist clinical decision-making, not for deterministic forecasting.'
+      : 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.';
 
     // Build Section II Summary Table Rows
     const summaryTableRows: TableRow[] = [
@@ -668,7 +776,13 @@ export async function exportDocx(payload: ClinicalReportPayload) {
             children: [
               new Paragraph({
                 alignment: AlignmentType.LEFT,
-                children: [new TextRun({ text: 'Phương pháp dự đoán', bold: true, size: 20 })],
+                children: [
+                  new TextRun({
+                    text: isEn ? 'Prediction Method' : 'Phương pháp dự đoán',
+                    bold: true,
+                    size: 20,
+                  }),
+                ],
               }),
             ],
           }),
@@ -692,7 +806,13 @@ export async function exportDocx(payload: ClinicalReportPayload) {
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: 'Khoảng tin cậy 95%', bold: true, size: 20 })],
+                children: [
+                  new TextRun({
+                    text: isEn ? '95% CI' : 'Khoảng tin cậy 95%',
+                    bold: true,
+                    size: 20,
+                  }),
+                ],
               }),
             ],
           }),
@@ -704,7 +824,13 @@ export async function exportDocx(payload: ClinicalReportPayload) {
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [new TextRun({ text: 'So với MPH', bold: true, size: 20 })],
+                children: [
+                  new TextRun({
+                    text: isEn ? 'Diff vs. MPH' : 'So với MPH',
+                    bold: true,
+                    size: 20,
+                  }),
+                ],
               }),
             ],
           }),
@@ -796,7 +922,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                   spacing: { before: 15, after: 15, line: 220 },
                   children: [
                     new TextRun({
-                      text: 'Chỉ số & Hệ số mô hình: ',
+                      text: isEn ? 'Model Metrics & Coefficients: ' : 'Chỉ số & Hệ số mô hình: ',
                       bold: true,
                       size: 15, // 7.5pt
                     }),
@@ -835,10 +961,11 @@ export async function exportDocx(payload: ClinicalReportPayload) {
           properties: {
             page: {
               margin: {
-                top: 680,
+                top: 660,
                 right: 860,
-                bottom: 680,
+                bottom: 780,
                 left: 860,
+                footer: 520,
               },
             },
           },
@@ -862,23 +989,23 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                             new TableCell({
                               width: { size: 86, type: WidthType.PERCENTAGE },
                               verticalAlign: VerticalAlign.CENTER,
-                              margins: { top: 0, bottom: 0, left: 0, right: 80 },
+                              margins: { top: 0, bottom: 0, left: 0, right: 20 },
                               children: [
                                 new Paragraph({
                                   alignment: AlignmentType.JUSTIFIED,
-                                  spacing: { before: 0, after: 0 },
+                                  spacing: { before: 0, after: 0, line: 210 },
                                   children: [
                                     new TextRun({
-                                      text: 'Ghi chú chuyên môn: ',
+                                      text: footerPrefix,
                                       bold: true,
                                       italics: true,
-                                      size: 15, // 7.5pt
+                                      size: 14, // 7pt - fits strictly in 2 lines
                                       color: '333333',
                                     }),
                                     new TextRun({
-                                      text: 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.',
+                                      text: footerBodyText,
                                       italics: true,
-                                      size: 15, // 7.5pt
+                                      size: 14, // 7pt - fits strictly in 2 lines
                                       color: '333333',
                                     }),
                                   ],
@@ -888,17 +1015,18 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                             new TableCell({
                               width: { size: 14, type: WidthType.PERCENTAGE },
                               verticalAlign: VerticalAlign.CENTER,
-                              margins: { top: 0, bottom: 0, left: 40, right: 0 },
+                              margins: { top: 0, bottom: 0, left: 10, right: 0 },
                               children: [
                                 new Paragraph({
                                   alignment: AlignmentType.RIGHT,
+                                  indent: { right: -160 },
                                   spacing: { before: 0, after: 0 },
                                   children: [
                                     new ImageRun({
                                       data: signatureImg.uint8Array,
                                       transformation: {
-                                        width: 58,
-                                        height: Math.round((58 / signatureImg.width) * signatureImg.height),
+                                        width: 68,
+                                        height: Math.round((68 / signatureImg.width) * signatureImg.height),
                                       },
                                       type: 'png',
                                     }),
@@ -912,18 +1040,19 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                     })
                   : new Paragraph({
                       alignment: AlignmentType.JUSTIFIED,
+                      spacing: { before: 0, after: 0, line: 210 },
                       children: [
                         new TextRun({
-                          text: 'Ghi chú chuyên môn: ',
+                          text: footerPrefix,
                           bold: true,
                           italics: true,
-                          size: 15, // 7.5pt
+                          size: 14, // 7pt
                           color: '333333',
                         }),
                         new TextRun({
-                          text: 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.',
+                          text: footerBodyText,
                           italics: true,
-                          size: 15, // 7.5pt
+                          size: 14, // 7pt
                           color: '333333',
                         }),
                       ],
@@ -932,7 +1061,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
             }),
           },
           children: [
-            // BRAND HEADER ("PAH Calc by Dr.Son" / "Tính chiều cao trưởng thành" + "Phân tích ngày:")
+            // BRAND HEADER
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },
               borders: {
@@ -954,13 +1083,20 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           spacing: { before: 0, after: 10 },
                           children: [
                             new TextRun({
-                              text: 'PAH Calc ',
+                              text: 'PAH Calc',
                               bold: true,
                               size: 32, // 16pt
                               color: '000000',
                             }),
                             new TextRun({
-                              text: 'by Dr.Son',
+                              text: '®',
+                              bold: true,
+                              size: 22,
+                              superScript: true,
+                              color: '000000',
+                            }),
+                            new TextRun({
+                              text: ' by Dr.Son',
                               bold: false,
                               size: 26, // 13pt
                               color: '333333',
@@ -979,7 +1115,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           spacing: { before: 0, after: 10 },
                           children: [
                             new TextRun({
-                              text: `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+                              text: isEn
+                                ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                                : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
                               size: 19,
                               italics: true,
                             }),
@@ -998,7 +1136,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
               spacing: { before: 140, after: 120 },
               children: [
                 new TextRun({
-                  text: 'PHIẾU KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
+                  text: isEn
+                    ? 'PREDICTED ADULT HEIGHT (PAH) CLINICAL REPORT'
+                    : 'PHIẾU KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
                   bold: true,
                   size: 27, // 13.5pt
                   color: '000000',
@@ -1028,7 +1168,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                         new Paragraph({
                           children: [
                             new TextRun({
-                              text: 'I. THÔNG TIN HÀNH CHÍNH & CHỈ SỐ NHÂN TRẮC',
+                              text: isEn
+                                ? 'I. ADMINISTRATIVE & ANTHROPOMETRIC INFORMATION'
+                                : 'I. THÔNG TIN HÀNH CHÍNH & CHỈ SỐ NHÂN TRẮC',
                               bold: true,
                               size: 21,
                               color: '000000',
@@ -1046,19 +1188,39 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                       shading: { fill: 'FFFFFF' },
                       margins: { top: 80, bottom: 80, left: 140, right: 100 },
                       children: [
-                        makeInfoLine('Giới tính', patientData.gender === 'boy' ? 'Nam' : 'Nữ'),
                         makeInfoLine(
-                          'Tuổi thực (CA)',
-                          `${patientData.ageYears} tuổi ${patientData.ageMonths || 0} tháng`
+                          isEn ? 'Gender' : 'Giới tính',
+                          isEn
+                            ? patientData.gender === 'boy'
+                              ? 'Male'
+                              : 'Female'
+                            : patientData.gender === 'boy'
+                            ? 'Nam'
+                            : 'Nữ'
                         ),
                         makeInfoLine(
-                          'Tuổi xương (BA-G&P)',
+                          isEn ? 'Chronological Age (CA)' : 'Tuổi thực (CA)',
+                          isEn
+                            ? `${patientData.ageYears} yrs ${patientData.ageMonths || 0} mos`
+                            : `${patientData.ageYears} tuổi ${patientData.ageMonths || 0} tháng`
+                        ),
+                        makeInfoLine(
+                          isEn ? 'Bone Age (BA-G&P)' : 'Tuổi xương (BA-G&P)',
                           patientData.noBoneAge
-                            ? 'Chưa chụp X-quang tuổi xương'
+                            ? isEn
+                              ? 'No X-ray bone age'
+                              : 'Chưa chụp X-quang tuổi xương'
+                            : isEn
+                            ? `${patientData.effectiveBoneAge} yrs`
                             : `${patientData.effectiveBoneAge} tuổi`
                         ),
                         ...(!patientData.noBoneAge
-                          ? [makeInfoLine('Độ lệch CA - BA', caMinusBaAndAphvLine)]
+                          ? [
+                              makeInfoLine(
+                                isEn ? 'CA - BA' : 'Độ lệch CA - BA',
+                                caMinusBaAndAphvLine
+                              ),
+                            ]
                           : []),
                       ],
                     }),
@@ -1067,20 +1229,30 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                       shading: { fill: 'FFFFFF' },
                       margins: { top: 80, bottom: 80, left: 100, right: 140 },
                       children: [
-                        makeInfoLine('Nhân trắc hiện tại', anthropometryDisplay),
                         makeInfoLine(
-                          'Chiều cao Bố / Mẹ',
+                          isEn ? 'Current Anthropometrics' : 'Nhân trắc hiện tại',
+                          anthropometryDisplay
+                        ),
+                        makeInfoLine(
+                          isEn ? 'Father / Mother Height' : 'Chiều cao Bố / Mẹ',
                           `${patientData.fatherHeight ? `${patientData.fatherHeight} cm` : '---'}  /  ${
                             patientData.motherHeight ? `${patientData.motherHeight} cm` : '---'
                           }`
                         ),
                         makeInfoLine(
-                          'Chiều cao di truyền (MPH)',
+                          isEn ? 'Mid-Parental Height (MPH)' : 'Chiều cao di truyền (MPH)',
                           patientData.mph && patientData.mph !== '---'
                             ? `${patientData.mph} cm (± ${patientData.gender === 'boy' ? '10' : '9'} cm)`
                             : '---'
                         ),
-                        ...(menarcheDisplay ? [makeInfoLine('Tình trạng dậy thì', menarcheDisplay)] : []),
+                        ...(menarcheDisplay
+                          ? [
+                              makeInfoLine(
+                                isEn ? 'Pubertal Status' : 'Tình trạng dậy thì',
+                                menarcheDisplay
+                              ),
+                            ]
+                          : []),
                       ],
                     }),
                   ],
@@ -1107,7 +1279,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                               new Paragraph({
                                 children: [
                                   new TextRun({
-                                    text: 'II. BẢNG TỔNG HỢP KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
+                                    text: isEn
+                                      ? 'II. SUMMARY OF PREDICTED ADULT HEIGHT (PAH) RESULTS'
+                                      : 'II. BẢNG TỔNG HỢP KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
                                     bold: true,
                                     size: 21,
                                     color: '000000',
@@ -1146,7 +1320,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                         new Paragraph({
                           children: [
                             new TextRun({
-                              text: 'III. KẾT LUẬN LÂM SÀNG',
+                              text: isEn ? 'III. CLINICAL CONCLUSION' : 'III. KẾT LUẬN LÂM SÀNG',
                               bold: true,
                               size: 21,
                               color: '000000',
@@ -1232,7 +1406,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
     });
 
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, getSafeFileName(patientData.name, 'docx'));
+    saveAs(blob, getSafeFileName(patientData.name, 'docx', lang));
   } catch (error) {
     console.error('Error exporting DOCX:', error);
   }
@@ -1240,41 +1414,64 @@ export async function exportDocx(payload: ClinicalReportPayload) {
 
 export async function exportPdf(payload: ClinicalReportPayload) {
   try {
-    const { patientData, summaryRows, conclusionText, chartData } = payload;
+    const { patientData, summaryRows, conclusionText, chartData, lang = 'vi' } = payload;
+    const isEn = lang === 'en';
     const numericMph =
       patientData.mph && !isNaN(Number(patientData.mph)) ? Number(patientData.mph) : null;
     const forestPlot =
-      chartData && chartData.length > 0 ? generateForestPlotImage(chartData, numericMph) : null;
+      chartData && chartData.length > 0 ? generateForestPlotImage(chartData, numericMph, lang) : null;
     const signatureImg = patientData.digitalSign ? await loadSignatureImage() : null;
 
     const caMinusBaAndAphvLine =
       !patientData.noBoneAge &&
       patientData.caMinusBa !== null &&
       patientData.caMinusBa !== undefined
-        ? `${patientData.caMinusBa > 0 ? '+' : ''}${patientData.caMinusBa} năm${
-            patientData.estimatedAphv !== null && patientData.estimatedAphv !== undefined
-              ? `  ;  APHV dự kiến: ~ ${patientData.estimatedAphv} tuổi`
-              : ''
-          }`
+        ? isEn
+          ? `${patientData.caMinusBa > 0 ? '+' : ''}${patientData.caMinusBa} yrs${
+              patientData.estimatedAphv !== null && patientData.estimatedAphv !== undefined
+                ? `  ;  Estimated APHV: ~ ${patientData.estimatedAphv} yrs`
+                : ''
+            }`
+          : `${patientData.caMinusBa > 0 ? '+' : ''}${patientData.caMinusBa} năm${
+              patientData.estimatedAphv !== null && patientData.estimatedAphv !== undefined
+                ? `  ;  APHV dự kiến: ~ ${patientData.estimatedAphv} tuổi`
+                : ''
+            }`
         : '---';
 
-    // Bỏ BMI ở Box 1 theo yêu cầu
-    const anthropometryDisplay = `Trẻ cao ${patientData.currentHeight} cm${
-      patientData.weight ? `, nặng ${patientData.weight} kg` : ''
-    }`;
+    const anthropometryDisplay = isEn
+      ? `Height ${patientData.currentHeight} cm${
+          patientData.weight ? `, Weight ${patientData.weight} kg` : ''
+        }`
+      : `Trẻ cao ${patientData.currentHeight} cm${
+          patientData.weight ? `, nặng ${patientData.weight} kg` : ''
+        }`;
 
     const menarcheDisplay =
       patientData.gender === 'girl'
         ? patientData.menarche === 'post' || patientData.menarche === 'yes'
-          ? `Đã có kinh nguyệt${
-              patientData.menarcheHeight
-                ? ` (chiều cao khi có chu kì đầu tiên: ${patientData.menarcheHeight} cm)`
-                : ''
-            }`
+          ? isEn
+            ? `Postmenarcheal${
+                patientData.menarcheHeight
+                  ? ` (height at first cycle: ${patientData.menarcheHeight} cm)`
+                  : ''
+              }`
+            : `Đã có kinh nguyệt${
+                patientData.menarcheHeight
+                  ? ` (chiều cao khi có chu kì đầu tiên: ${patientData.menarcheHeight} cm)`
+                  : ''
+              }`
+          : isEn
+          ? 'Premenarcheal'
           : 'Chưa có kinh nguyệt'
         : null;
 
     const allMetricsText = buildAllModelsMetricsParagraphText(payload);
+
+    const footerPrefix = isEn ? 'Note: ' : 'Lưu ý: ';
+    const footerBodyText = isEn
+      ? 'Predicted results depend on skeletal maturity at X-ray assessment, genetic potential, and nutritional-endocrine factors. This report supports periodic growth monitoring and specialist clinical decision-making, not for deterministic forecasting.'
+      : 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.';
 
     const blackGridLayout = {
       hLineWidth: () => 0.8,
@@ -1315,7 +1512,9 @@ export async function exportPdf(payload: ClinicalReportPayload) {
     const summaryBody: any[][] = [
       [
         {
-          text: 'II. BẢNG TỔNG HỢP KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
+          text: isEn
+            ? 'II. SUMMARY OF PREDICTED ADULT HEIGHT (PAH) RESULTS'
+            : 'II. BẢNG TỔNG HỢP KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
           bold: true,
           fontSize: 10,
           colSpan: 4,
@@ -1326,10 +1525,25 @@ export async function exportPdf(payload: ClinicalReportPayload) {
         {},
       ],
       [
-        { text: 'Phương pháp dự đoán', bold: true, fontSize: 9.5, alignment: 'left' },
+        {
+          text: isEn ? 'Prediction Method' : 'Phương pháp dự đoán',
+          bold: true,
+          fontSize: 9.5,
+          alignment: 'left',
+        },
         { text: 'PAH ± SD (cm)', bold: true, fontSize: 9.5, alignment: 'center' },
-        { text: 'Khoảng tin cậy 95%', bold: true, fontSize: 9.5, alignment: 'center' },
-        { text: 'So với MPH', bold: true, fontSize: 9.5, alignment: 'center' },
+        {
+          text: isEn ? '95% CI' : 'Khoảng tin cậy 95%',
+          bold: true,
+          fontSize: 9.5,
+          alignment: 'center',
+        },
+        {
+          text: isEn ? 'Diff vs. MPH' : 'So với MPH',
+          bold: true,
+          fontSize: 9.5,
+          alignment: 'center',
+        },
       ],
       ...summaryRows.map((row) => [
         { text: row.methodName, bold: true, fontSize: 9.5, alignment: 'left' },
@@ -1365,7 +1579,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
           lineHeight: 1.15,
           text: [
             {
-              text: 'Chỉ số & Hệ số mô hình: ',
+              text: isEn ? 'Model Metrics & Coefficients: ' : 'Chỉ số & Hệ số mô hình: ',
               bold: true,
             },
             {
@@ -1384,7 +1598,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
     const docDefinition: any = {
       pageSize: 'A4',
       pageOrientation: 'portrait',
-      pageMargins: [34, 24, 34, 38],
+      pageMargins: [34, 22, 34, 48],
       defaultStyle: {
         font: 'Roboto',
         fontSize: 9.5,
@@ -1394,70 +1608,76 @@ export async function exportPdf(payload: ClinicalReportPayload) {
       footer:
         signatureImg && signatureImg.dataUrl
           ? {
-              margin: [34, 2, 34, 0],
+              margin: [34, 0, 14, 12],
               columns: [
                 {
                   width: '*',
                   alignment: 'justify',
+                  margin: [0, 2, 0, 0],
+                  lineHeight: 1.12,
                   text: [
                     {
-                      text: 'Ghi chú chuyên môn: ',
+                      text: footerPrefix,
                       bold: true,
                       italics: true,
-                      fontSize: 7.5,
+                      fontSize: 6.8,
                       color: '#333333',
                     },
                     {
-                      text: 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.',
+                      text: footerBodyText,
                       italics: true,
-                      fontSize: 7.5,
+                      fontSize: 6.8,
                       color: '#333333',
                     },
                   ],
                 },
                 {
-                  width: 64,
+                  width: 72,
                   image: signatureImg.dataUrl,
-                  fit: [56, 22],
+                  fit: [68, 25],
                   alignment: 'right',
-                  margin: [8, 0, 0, 0],
+                  margin: [4, -2, 0, 0],
                 },
               ],
             }
           : {
-              margin: [34, 4, 34, 0],
+              margin: [34, 2, 34, 12],
+              lineHeight: 1.12,
               text: [
                 {
-                  text: 'Ghi chú chuyên môn: ',
+                  text: footerPrefix,
                   bold: true,
                   italics: true,
-                  fontSize: 7.5,
+                  fontSize: 7.0,
                   color: '#333333',
                 },
                 {
-                  text: 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.',
+                  text: footerBodyText,
                   italics: true,
-                  fontSize: 7.5,
+                  fontSize: 7.0,
                   color: '#333333',
                 },
               ],
               alignment: 'justify',
             },
       content: [
-        // BRAND HEADER ("PAH Calc by Dr.Son" + "Phân tích ngày:")
+        // BRAND HEADER
         {
           columns: [
             {
               width: '*',
               text: [
-                { text: 'PAH Calc ', bold: true, fontSize: 15, color: '#000000' },
-                { text: 'by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
+                { text: 'PAH Calc', bold: true, fontSize: 15, color: '#000000' },
+                { text: '®', bold: true, fontSize: 10.5, sup: true, color: '#000000' },
+                { text: ' by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
               ],
               lineHeight: 1.05,
             },
             {
               width: 'auto',
-              text: `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+              text: isEn
+                ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
               italics: true,
               fontSize: 9.5,
               alignment: 'right',
@@ -1482,7 +1702,9 @@ export async function exportPdf(payload: ClinicalReportPayload) {
 
         // MAIN REPORT TITLE
         {
-          text: 'PHIẾU KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
+          text: isEn
+            ? 'PREDICTED ADULT HEIGHT (PAH) CLINICAL REPORT'
+            : 'PHIẾU KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
           bold: true,
           fontSize: 13.5,
           alignment: 'center',
@@ -1496,7 +1718,9 @@ export async function exportPdf(payload: ClinicalReportPayload) {
             body: [
               [
                 {
-                  text: 'I. THÔNG TIN HÀNH CHÍNH & CHỈ SỐ NHÂN TRẮC',
+                  text: isEn
+                    ? 'I. ADMINISTRATIVE & ANTHROPOMETRIC INFORMATION'
+                    : 'I. THÔNG TIN HÀNH CHÍNH & CHỈ SỐ NHÂN TRẮC',
                   bold: true,
                   fontSize: 10,
                   colSpan: 2,
@@ -1508,24 +1732,43 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                   stack: [
                     {
                       text: [
-                        { text: 'Giới tính: ', bold: true },
-                        { text: patientData.gender === 'boy' ? 'Nam' : 'Nữ' },
+                        { text: isEn ? 'Gender: ' : 'Giới tính: ', bold: true },
+                        {
+                          text: isEn
+                            ? patientData.gender === 'boy'
+                              ? 'Male'
+                              : 'Female'
+                            : patientData.gender === 'boy'
+                            ? 'Nam'
+                            : 'Nữ',
+                        },
                       ],
                       margin: [0, 1, 0, 2],
                     },
                     {
                       text: [
-                        { text: 'Tuổi thực (CA): ', bold: true },
-                        { text: `${patientData.ageYears} tuổi ${patientData.ageMonths || 0} tháng` },
+                        {
+                          text: isEn ? 'Chronological Age (CA): ' : 'Tuổi thực (CA): ',
+                          bold: true,
+                        },
+                        {
+                          text: isEn
+                            ? `${patientData.ageYears} yrs ${patientData.ageMonths || 0} mos`
+                            : `${patientData.ageYears} tuổi ${patientData.ageMonths || 0} tháng`,
+                        },
                       ],
                       margin: [0, 1, 0, 2],
                     },
                     {
                       text: [
-                        { text: 'Tuổi xương (BA-G&P): ', bold: true },
+                        { text: isEn ? 'Bone Age (BA-G&P): ' : 'Tuổi xương (BA-G&P): ', bold: true },
                         {
                           text: patientData.noBoneAge
-                            ? 'Chưa chụp X-quang tuổi xương'
+                            ? isEn
+                              ? 'No X-ray bone age'
+                              : 'Chưa chụp X-quang tuổi xương'
+                            : isEn
+                            ? `${patientData.effectiveBoneAge} yrs`
                             : `${patientData.effectiveBoneAge} tuổi`,
                         },
                       ],
@@ -1535,7 +1778,10 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                       ? [
                           {
                             text: [
-                              { text: 'Độ lệch CA - BA: ', bold: true },
+                              {
+                                text: isEn ? 'CA - BA: ' : 'Độ lệch CA - BA: ',
+                                bold: true,
+                              },
                               { text: caMinusBaAndAphvLine },
                             ],
                             margin: [0, 1, 0, 1],
@@ -1548,14 +1794,20 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                   stack: [
                     {
                       text: [
-                        { text: 'Nhân trắc hiện tại: ', bold: true },
+                        {
+                          text: isEn ? 'Current Anthropometrics: ' : 'Nhân trắc hiện tại: ',
+                          bold: true,
+                        },
                         { text: anthropometryDisplay },
                       ],
                       margin: [0, 1, 0, 2],
                     },
                     {
                       text: [
-                        { text: 'Chiều cao Bố / Mẹ: ', bold: true },
+                        {
+                          text: isEn ? 'Father / Mother Height: ' : 'Chiều cao Bố / Mẹ: ',
+                          bold: true,
+                        },
                         {
                           text: `${
                             patientData.fatherHeight ? `${patientData.fatherHeight} cm` : '---'
@@ -1568,7 +1820,12 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                     },
                     {
                       text: [
-                        { text: 'Chiều cao di truyền (MPH): ', bold: true },
+                        {
+                          text: isEn
+                            ? 'Mid-Parental Height (MPH): '
+                            : 'Chiều cao di truyền (MPH): ',
+                          bold: true,
+                        },
                         {
                           text:
                             patientData.mph && patientData.mph !== '---'
@@ -1584,7 +1841,10 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                       ? [
                           {
                             text: [
-                              { text: 'Tình trạng dậy thì: ', bold: true },
+                              {
+                                text: isEn ? 'Pubertal Status: ' : 'Tình trạng dậy thì: ',
+                                bold: true,
+                              },
                               { text: menarcheDisplay },
                             ],
                             margin: [0, 1, 0, 1],
@@ -1622,7 +1882,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
             body: [
               [
                 {
-                  text: 'III. KẾT LUẬN LÂM SÀNG',
+                  text: isEn ? 'III. CLINICAL CONCLUSION' : 'III. KẾT LUẬN LÂM SÀNG',
                   bold: true,
                   fontSize: 10,
                 },
@@ -1671,7 +1931,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
       ],
     };
 
-    pdfMake.createPdf(docDefinition).download(getSafeFileName(patientData.name, 'pdf'));
+    pdfMake.createPdf(docDefinition).download(getSafeFileName(patientData.name, 'pdf', lang));
   } catch (error) {
     console.error('Error exporting PDF:', error);
   }

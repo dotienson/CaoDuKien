@@ -108,18 +108,26 @@ export const GIRL_BAYESIAN: Record<number, GirlBayesianRow> = {
   18: { w_pop: 0.00, w_p: 0.00, rmse: 0.3, rmse_p: 0.3 },
 };
 
-export function validateCustomPopulation(male: number, female: number): string | null {
+export function validateCustomPopulation(male: number, female: number, lang: 'vi' | 'en' = 'vi'): string | null {
   if (isNaN(male) || isNaN(female)) {
-    return 'Vui lòng nhập chiều cao trung bình Nam và Nữ hợp lệ.';
+    return lang === 'vi'
+      ? 'Vui lòng nhập chiều cao trung bình Nam và Nữ hợp lệ.'
+      : 'Please enter valid average Adult Male and Female heights.';
   }
   if (male < 150 || male > 195) {
-    return 'Biên sinh học Nam trưởng thành hợp lệ: 150 ≤ H_pop_male ≤ 195 cm.';
+    return lang === 'vi'
+      ? 'Biên sinh học Nam trưởng thành hợp lệ: 150 ≤ Hpop_male ≤ 195 cm.'
+      : 'Valid Adult Male biological range: 150 ≤ Hpop_male ≤ 195 cm.';
   }
   if (female < 140 || female > 185) {
-    return 'Biên sinh học Nữ trưởng thành hợp lệ: 140 ≤ H_pop_female ≤ 185 cm.';
+    return lang === 'vi'
+      ? 'Biên sinh học Nữ trưởng thành hợp lệ: 140 ≤ Hpop_female ≤ 185 cm.'
+      : 'Valid Adult Female biological range: 140 ≤ Hpop_female ≤ 185 cm.';
   }
   if (male <= female) {
-    return 'Chiều cao trung bình Nam (H_pop_male) phải lớn hơn Nữ (H_pop_female).';
+    return lang === 'vi'
+      ? 'Chiều cao trung bình Nam (Hpop_male) phải lớn hơn Nữ (Hpop_female).'
+      : 'Average Adult Male height (Hpop_male) must be greater than Female (Hpop_female).';
   }
   return null;
 }

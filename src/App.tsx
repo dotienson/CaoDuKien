@@ -5,7 +5,7 @@ import { calculateKhamisRoche } from './data/khamisRoche';
 import { calculateRWT, RWTCoefficient } from './data/rwt';
 import { bpTable } from './bpTable';
 import { predictAdultHeightBxV3, validateCustomPopulation, BxPopulationMode } from './data/bonexpertV2';
-import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown, Check, PenTool } from 'lucide-react';
+import { Copy, Info, ChevronDown, ChevronUp, ExternalLink, FileText, FileDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { exportDocx, exportPdf, PahSummaryRow, ClinicalReportPayload } from './utils/exportMetrics';
 import { HeightPredictionChart } from './components/HeightPredictionChart';
@@ -207,7 +207,9 @@ export default function App() {
             
             <div className="text-center mb-6 w-full flex flex-col items-center justify-center py-2">
               <div className="text-3xl tracking-tight text-[#1b365d] leading-tight">
-                <span className="font-extrabold">PAH Calc</span>{' '}
+                <span className="font-extrabold">
+                  PAH Calc<sup className="text-[0.42em] font-bold ml-0.5 -top-[0.85em]">®</sup>
+                </span>{' '}
                 <span className="font-normal text-slate-600 text-2xl">by Dr.Son</span>
               </div>
               <div className="text-base font-semibold text-slate-700 mt-1.5">
@@ -603,7 +605,7 @@ function MainApp() {
 
   const customPopValidationError =
     bxV2Pop === 'custom'
-      ? validateCustomPopulation(Number(customPopMale), Number(customPopFemale))
+      ? validateCustomPopulation(Number(customPopMale), Number(customPopFemale), lang)
       : null;
 
   const bxV2Result = (
@@ -692,8 +694,12 @@ function MainApp() {
         bxV2Pop === 'vietnam'
           ? 'NIN FH VN 2020'
           : bxV2Pop === 'caucasian'
-          ? 'Châu Âu - Zurich'
-          : `Tùy chỉnh ${bxV2Result.inputs.h_pop} cm`;
+          ? lang === 'vi'
+            ? 'Châu Âu - Zurich'
+            : 'Caucasian - Zurich'
+          : lang === 'vi'
+          ? `Tùy chỉnh ${bxV2Result.inputs.h_pop} cm`
+          : `Custom ${bxV2Result.inputs.h_pop} cm`;
       bulletLines.push(
         lang === 'vi'
           ? `- Theo Mô hình Thodberg-Martin (2012) (${popShortLabel}): ${bxV2Result.predictions.final_predicted_height_cm} +/- ${bxV2Result.predictions.rmse_cm}cm`
@@ -877,8 +883,12 @@ function MainApp() {
         bxV2Pop === 'vietnam'
           ? 'NIN FH VN 2020'
           : bxV2Pop === 'caucasian'
-          ? 'Châu Âu - Zurich'
-          : `Tùy chỉnh ${bxV2Result.inputs.h_pop} cm`;
+          ? lang === 'vi'
+            ? 'Châu Âu - Zurich'
+            : 'Caucasian - Zurich'
+          : lang === 'vi'
+          ? `Tùy chỉnh ${bxV2Result.inputs.h_pop} cm`
+          : `Custom ${bxV2Result.inputs.h_pop} cm`;
       addRow(
         'tm2012',
         `Thodberg-Martin (2012) (${popShortLabel})`,
@@ -896,6 +906,7 @@ function MainApp() {
     }
 
     return {
+      lang,
       patientData: {
         name,
         gender,
@@ -1027,7 +1038,9 @@ function MainApp() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 border-b border-slate-200 pb-4">
             <div className="md:col-span-7 text-center md:text-left flex flex-col justify-center">
               <h1 className={`tracking-tight ${primaryColor} leading-tight`}>
-                <span className="text-3xl md:text-4xl font-extrabold">PAH Calc</span>{' '}
+                <span className="text-3xl md:text-4xl font-extrabold">
+                  PAH Calc<sup className="text-[0.42em] font-bold ml-0.5 -top-[0.85em]">®</sup>
+                </span>{' '}
                 <span className="text-2xl md:text-3xl font-normal opacity-85">by Dr.Son</span>
               </h1>
               <p className={`text-lg md:text-xl mt-1 ${primaryColor}`}>
@@ -1041,62 +1054,6 @@ function MainApp() {
               </p>
             </div>
           </div>
-
-          {/* 3-Step Clinical Progress Bar */}
-          {(() => {
-            const step1Done = ageYears !== '' && !invalidAgeError;
-            const step2Done = numCurrentHeight !== '' && isValidHeight(numCurrentHeight) && isMenarcheValid;
-            const step3Done = (numBoneAge !== '' || (noBoneAge && canUseNoBoneAge)) && !outOfRangeError;
-            const steps = [
-              { id: 1, label: lang === 'vi' ? 'Thông tin hành chính' : 'Administrative Info', done: step1Done },
-              { id: 2, label: lang === 'vi' ? 'Số đo nhân trắc' : 'Anthropometrics', done: step2Done },
-              { id: 3, label: lang === 'vi' ? 'Dữ liệu X-quang' : 'X-ray Data', done: step3Done },
-            ];
-            const completedCount = steps.filter(s => s.done).length;
-            const progressPct = Math.round((completedCount / steps.length) * 100);
-
-            return (
-              <div className="mb-6 bg-[#f4f6f9] border border-slate-300 rounded-md px-4 py-3 shadow-xs">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#1b365d]">
-                    {lang === 'vi' ? 'Tiến độ hoàn thiện dữ liệu' : 'Data Entry Progress'}
-                  </span>
-                  <span className={`text-xs font-extrabold px-2 py-0.5 rounded-sm ${progressPct === 100 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200/80 text-[#1b365d]'}`}>
-                    {completedCount}/3 ({progressPct}%)
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-sm overflow-hidden mb-3">
-                  <div
-                    className={`h-full transition-all duration-500 ${progressPct === 100 ? 'bg-emerald-600' : 'bg-[#1b365d]'}`}
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {steps.map((step) => (
-                    <div
-                      key={step.id}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded border text-xs font-bold transition-all ${
-                        step.done
-                          ? 'bg-white border-emerald-500/70 text-emerald-800 shadow-2xs'
-                          : 'bg-white/70 border-slate-300/80 text-slate-600'
-                      }`}
-                    >
-                      <span
-                        className={`w-5 h-5 rounded-sm flex items-center justify-center text-[11px] font-extrabold shrink-0 transition-colors ${
-                          step.done
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-200 text-[#1b365d]'
-                        }`}
-                      >
-                        {step.done ? <Check size={12} strokeWidth={3} /> : step.id}
-                      </span>
-                      <span className="truncate">{step.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
 
           {/* Form Grid */}
           <div className={`${theme.cardBg} px-4 md:px-6 pt-6 pb-6 rounded-md border ${theme.cardBorder} relative shadow-xs mb-6 mt-2`}>
@@ -1278,7 +1235,7 @@ function MainApp() {
               
               {krResult && (
                 <div className={`mt-4 bg-white/80 p-3 rounded-md border ${theme.cardBorder} text-sm flex justify-between items-center shadow-2xs`}>
-                  <span className={theme.labelDark}>{lang === 'vi' ? 'Dự kiến theo Khamis-Roche' : 'Khamis-Roche Prediction'}:</span>
+                  <span className={theme.labelDark}>{lang === 'vi' ? 'Kết quả krAPH:' : 'krAPH Result:'}</span>
                   <span className={`font-bold text-lg ${theme.labelDark}`}>{krResult.pah} cm <span className={`text-xs font-normal opacity-70`}>(+/- {krResult.error})</span></span>
                 </div>
               )}
@@ -1380,8 +1337,7 @@ function MainApp() {
                           onChange={(e) => setDigitalSign(e.target.checked)} 
                           className="rounded-xs border-slate-300 accent-[#1b365d] w-4 h-4" 
                         />
-                        <span className={`inline-flex items-center gap-1 ${theme.labelDark}`}>
-                          <PenTool size={13} className="text-[#1b365d]" />
+                        <span className={theme.labelDark}>
                           {lang === 'vi' ? 'Kí số' : 'Digital Sign'}
                         </span>
                       </label>
@@ -1478,7 +1434,11 @@ function MainApp() {
           {/* Mô hình AHP Thodberg-Martin (2012) Dedicated Card */}
           <div className={`${theme.cardBg} px-4 md:px-6 pt-6 pb-5 rounded-md border ${theme.cardBorder} relative shadow-xs mb-6 mt-4`}>
             <div className={`absolute -top-3 left-4 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded border ${theme.cardBorder} ${theme.labelDark} shadow-2xs flex items-center gap-2`}>
-              <span>MÔ HÌNH AHP THODBERG-MARTIN (2012)</span>
+              <span>
+                {lang === 'vi'
+                  ? 'MÔ HÌNH AHP THODBERG-MARTIN (2012)'
+                  : 'AHP THODBERG-MARTIN (2012) MODEL'}
+              </span>
               <span className="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded-sm font-extrabold tracking-wider">BETA</span>
             </div>
 
@@ -1487,7 +1447,7 @@ function MainApp() {
               <div className="md:col-span-7 space-y-4">
                 <div>
                   <label className={`block text-sm ${theme.labelDark} mb-2`}>
-                    Dữ liệu theo Quần thể
+                    {lang === 'vi' ? 'Dữ liệu theo Quần thể' : 'Population Reference Data'}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
@@ -1495,21 +1455,21 @@ function MainApp() {
                       onClick={() => setBxV2Pop('vietnam')}
                       className={`py-2 px-3 rounded-md text-xs font-semibold transition-all border ${bxV2Pop === 'vietnam' ? primaryBg + ' text-white border-[#1b365d] shadow-2xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}`}
                     >
-                      Việt Nam
+                      {lang === 'vi' ? 'Việt Nam' : 'Vietnam'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setBxV2Pop('caucasian')}
                       className={`py-2 px-3 rounded-md text-xs font-semibold transition-all border ${bxV2Pop === 'caucasian' ? primaryBg + ' text-white border-[#1b365d] shadow-2xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}`}
                     >
-                      Trung Âu
+                      {lang === 'vi' ? 'Trung Âu' : 'Central Europe'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setBxV2Pop('custom')}
                       className={`py-2 px-3 rounded-md text-xs font-semibold transition-all border ${bxV2Pop === 'custom' ? primaryBg + ' text-white border-[#1b365d] shadow-2xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}`}
                     >
-                      Tuỳ chỉnh
+                      {lang === 'vi' ? 'Tuỳ chỉnh' : 'Custom'}
                     </button>
                   </div>
 
@@ -1518,7 +1478,9 @@ function MainApp() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                            Nam trưởng thành (150 – 195 cm)
+                            {lang === 'vi'
+                              ? 'Nam trưởng thành (150 – 195 cm)'
+                              : 'Adult Male (150 – 195 cm)'}
                           </label>
                           <input
                             type="text"
@@ -1532,7 +1494,9 @@ function MainApp() {
                         </div>
                         <div>
                           <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                            Nữ trưởng thành (140 – 185 cm)
+                            {lang === 'vi'
+                              ? 'Nữ trưởng thành (140 – 185 cm)'
+                              : 'Adult Female (140 – 185 cm)'}
                           </label>
                           <input
                             type="text"
@@ -1564,13 +1528,21 @@ function MainApp() {
                         onChange={(e) => setBxV2UseParents(e.target.checked)}
                         className="rounded-xs accent-[#1b365d] w-3.5 h-3.5 shrink-0"
                       />
-                      <span>Hiệu chỉnh Tiềm năng Di truyền (Dịch chuyển Thế hệ = +1.0cm)</span>
+                      <span>
+                        {lang === 'vi'
+                          ? 'Hiệu chỉnh Tiềm năng Di truyền (Dịch chuyển Thế hệ = +1.0cm)'
+                          : 'Genetic Potential Adjustment (Secular Trend = +1.0cm)'}
+                      </span>
                     </label>
                     {bxV2Result && (
                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${bxV2Result.intermediate_metrics.is_golden_window ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300'}`}>
                         {bxV2Result.intermediate_metrics.is_golden_window
-                          ? 'Thời điểm tối ưu cho dự đoán PAH'
-                          : `Giai đoạn dậy thì (BA ≥ ${gender === 'boy' ? '12.0' : '10.5'}t)`}
+                          ? lang === 'vi'
+                            ? 'Thời điểm tối ưu cho dự đoán PAH'
+                            : 'Optimal window for PAH prediction'
+                          : lang === 'vi'
+                          ? `Giai đoạn dậy thì (BA ≥ ${gender === 'boy' ? '12.0' : '10.5'}t)`
+                          : `Pubertal stage (BA ≥ ${gender === 'boy' ? '12.0' : '10.5'}y)`}
                       </span>
                     )}
                   </div>
@@ -1578,11 +1550,17 @@ function MainApp() {
                   {gender === 'girl' && menarche === 'post' && (
                     <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
                       <span>
-                        Chiều cao khi có chu kì kinh đầu:{' '}
+                        {lang === 'vi'
+                          ? 'Chiều cao khi có chu kì kinh đầu:'
+                          : 'Height at first menstrual cycle:'}{' '}
                         <strong className={theme.labelDark}>
                           {bxV2MenarcheHeight && isValidHeight(Number(bxV2MenarcheHeight))
-                            ? `${bxV2MenarcheHeight} cm (Mục tiêu H_M = ${(Number(bxV2MenarcheHeight) + 6.6).toFixed(1)} cm)`
-                            : 'Chưa nhập (NA)'}
+                            ? lang === 'vi'
+                              ? `${bxV2MenarcheHeight} cm (Mục tiêu H_M = ${(Number(bxV2MenarcheHeight) + 6.6).toFixed(1)} cm)`
+                              : `${bxV2MenarcheHeight} cm (Target H_M = ${(Number(bxV2MenarcheHeight) + 6.6).toFixed(1)} cm)`
+                            : lang === 'vi'
+                            ? 'Chưa nhập (NA)'
+                            : 'Not entered (NA)'}
                         </strong>
                       </span>
                     </div>
@@ -1594,20 +1572,45 @@ function MainApp() {
                   <div className="bg-white/90 p-3.5 rounded-md border border-slate-300/90 grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
                     <div className="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-col items-center justify-center text-center">
                       <span className="text-slate-500 block text-[11px] font-medium leading-snug">
-                        Dư địa tăng trưởng<br />&amp; CA-BA
+                        {lang === 'vi' ? (
+                          <>
+                            Dư địa tăng trưởng
+                            <br />
+                            &amp; CA-BA
+                          </>
+                        ) : (
+                          <>
+                            Growth Potential
+                            <br />
+                            &amp; CA-BA
+                          </>
+                        )}
                       </span>
                       <div className={`font-bold text-sm mt-1.5 ${theme.labelDark}`}>
                         {bxV2Result.intermediate_metrics.growth_potential_pct}%{' '}
                         <span className="text-xs font-semibold text-slate-600">
                           ({bxV2Result.intermediate_metrics.ba_delay_years > 0 ? '+' : ''}
-                          {bxV2Result.intermediate_metrics.ba_delay_years}t)
+                          {bxV2Result.intermediate_metrics.ba_delay_years}
+                          {lang === 'vi' ? 't' : 'y'})
                         </span>
                       </div>
                     </div>
 
                     <div className="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-col items-center justify-center text-center">
                       <span className="text-slate-500 block text-[11px] font-medium leading-snug">
-                        Kết quả thô (Hraw)<br />PAH(x)
+                        {lang === 'vi' ? (
+                          <>
+                            Kết quả thô (Hraw)
+                            <br />
+                            PAH(x)
+                          </>
+                        ) : (
+                          <>
+                            Raw Result (Hraw)
+                            <br />
+                            PAH(x)
+                          </>
+                        )}
                       </span>
                       <div className={`font-bold text-sm mt-1.5 ${theme.labelDark}`}>
                         {bxV2Result.intermediate_metrics.h_raw_cm} cm
@@ -1616,7 +1619,19 @@ function MainApp() {
 
                     <div className="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-col items-center justify-center text-center">
                       <span className="text-slate-500 block text-[11px] font-medium leading-snug">
-                        Hệ số Quần thể<br />(Hpred, w={bxV2Result.intermediate_metrics.w_pop})
+                        {lang === 'vi' ? (
+                          <>
+                            Hệ số Quần thể
+                            <br />
+                            (Hpred, w={bxV2Result.intermediate_metrics.w_pop})
+                          </>
+                        ) : (
+                          <>
+                            Population Factor
+                            <br />
+                            (Hpred, w={bxV2Result.intermediate_metrics.w_pop})
+                          </>
+                        )}
                       </span>
                       <div className="font-bold text-sm text-slate-800 mt-1.5">
                         {bxV2Result.predictions.ahp_using_population_hpred.height_cm} ± {bxV2Result.predictions.ahp_using_population_hpred.rmse_cm} cm
@@ -1625,7 +1640,19 @@ function MainApp() {
 
                     <div className="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-col items-center justify-center text-center">
                       <span className="text-slate-500 block text-[11px] font-medium leading-snug">
-                        Kết quả kết hợp<br />PAH (x+p)
+                        {lang === 'vi' ? (
+                          <>
+                            Kết quả kết hợp
+                            <br />
+                            PAH (x+p)
+                          </>
+                        ) : (
+                          <>
+                            Combined Result
+                            <br />
+                            PAH (x+p)
+                          </>
+                        )}
                       </span>
                       <div className="font-bold text-sm text-slate-800 mt-1.5 leading-tight">
                         {bxV2Result.predictions.ahp_using_parents_hpredp ? (
@@ -1637,29 +1664,45 @@ function MainApp() {
                               (PAH (p): {bxV2Result.intermediate_metrics.target_height_from_parents_hp_cm})
                             </span>
                           </>
-                        ) : (
+                        ) : lang === 'vi' ? (
                           'Chưa dùng'
+                        ) : (
+                          'Not used'
                         )}
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-col items-center justify-center text-center">
-                      <span className="text-slate-500 block text-[11px] font-medium leading-snug">
-                        Hiệu chỉnh theo kinh nguyệt<br />PAH (x+p+m)
-                      </span>
-                      <div className="font-bold text-sm text-slate-800 mt-1.5">
-                        {bxV2Result.predictions.ahp_using_menarche_hpredm
-                          ? `${bxV2Result.predictions.ahp_using_menarche_hpredm.height_cm} ± ${bxV2Result.predictions.ahp_using_menarche_hpredm.rmse_cm} cm`
-                          : gender === 'girl'
-                          ? 'Chưa nhập (NA)'
-                          : 'Chỉ áp dụng cho Nữ'}
+                    {gender === 'girl' && (
+                      <div className="bg-slate-50 p-2.5 rounded border border-slate-200 flex flex-col items-center justify-center text-center">
+                        <span className="text-slate-500 block text-[11px] font-medium leading-snug">
+                          {lang === 'vi' ? (
+                            <>
+                              Hiệu chỉnh theo kinh nguyệt
+                              <br />
+                              PAH (x+p+m)
+                            </>
+                          ) : (
+                            <>
+                              Menarche Adjustment
+                              <br />
+                              PAH (x+p+m)
+                            </>
+                          )}
+                        </span>
+                        <div className="font-bold text-sm text-slate-800 mt-1.5">
+                          {bxV2Result.predictions.ahp_using_menarche_hpredm
+                            ? `${bxV2Result.predictions.ahp_using_menarche_hpredm.height_cm} ± ${bxV2Result.predictions.ahp_using_menarche_hpredm.rmse_cm} cm`
+                            : lang === 'vi'
+                            ? 'Chưa nhập (NA)'
+                            : 'Not entered (NA)'}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {gender === 'boy' && (
                       <div className="bg-amber-50/80 p-2.5 rounded border border-amber-200 flex flex-col items-center justify-center text-center">
                         <span className="text-amber-800 block text-[11px] font-semibold leading-snug">
-                          Hiệu chỉnh theo BMI
+                          {lang === 'vi' ? 'Hiệu chỉnh theo BMI' : 'BMI Adjustment'}
                         </span>
                         <div className="font-bold text-xs text-amber-900 mt-1 leading-tight">
                           {bxV2Result.bmi_v3_reference.applicable ? (
@@ -1676,15 +1719,19 @@ function MainApp() {
                             ) : (
                               <>
                                 <span className="block">ΔH = {bxV2Result.bmi_v3_reference.delta_h_coeff} cm/SDS</span>
-                                <span className="block font-normal text-[10px] text-amber-800 mt-0.5">(Nhập cân nặng để tính)</span>
+                                <span className="block font-normal text-[10px] text-amber-800 mt-0.5">
+                                  {lang === 'vi' ? '(Nhập cân nặng để tính)' : '(Enter weight to calculate)'}
+                                </span>
                               </>
                             )
                           ) : (
-                            `ΔH = ${bxV2Result.bmi_v3_reference.delta_h_coeff} (BA ≥ 16t)`
+                            `ΔH = ${bxV2Result.bmi_v3_reference.delta_h_coeff} (BA ≥ ${lang === 'vi' ? '16t' : '16y'})`
                           )}
                         </div>
                         <span className="text-[10px] text-amber-700/90 block mt-1 leading-tight">
-                          (chỉ cho trẻ nam, không tính vào kết quả)
+                          {lang === 'vi'
+                            ? '(chỉ cho trẻ nam, không tính vào kết quả)'
+                            : '(boys only, excluded from final result)'}
                         </span>
                       </div>
                     )}
@@ -1692,10 +1739,14 @@ function MainApp() {
                 ) : (
                   <div className="bg-white/70 p-3.5 rounded-md border border-dashed border-slate-300 text-xs text-slate-500 text-center">
                     {noBoneAge
-                      ? 'Mô hình AHP Thodberg-Martin (2012) yêu cầu có số liệu Tuổi xương chụp X-quang (bỏ tích "Không có tuổi xương").'
+                      ? lang === 'vi'
+                        ? 'Mô hình AHP Thodberg-Martin (2012) yêu cầu có số liệu Tuổi xương chụp X-quang (bỏ tích "Không có tuổi xương").'
+                        : 'AHP Thodberg-Martin (2012) model requires X-ray Bone Age data (uncheck "No bone age").'
                       : customPopValidationError
                       ? customPopValidationError
-                      : 'Nhập đầy đủ Tuổi thực, Chiều cao hiện tại và Tuổi xương X-quang ở bảng trên để tự động tính toán theo Mô hình AHP Thodberg-Martin (2012).'}
+                      : lang === 'vi'
+                      ? 'Nhập đầy đủ Tuổi thực, Chiều cao hiện tại và Tuổi xương X-quang ở bảng trên để tự động tính toán theo Mô hình AHP Thodberg-Martin (2012).'
+                      : 'Enter Chronological Age, Current Height, and X-ray Bone Age above to automatically calculate with the AHP Thodberg-Martin (2012) model.'}
                   </div>
                 )}
               </div>
@@ -1745,7 +1796,18 @@ function MainApp() {
                         </div>
                       )}
                       <div className="inline-flex items-center gap-1.5 bg-white/15 px-2.5 py-0.5 rounded text-[11px] font-semibold border border-white/20">
-                        <span>{bxV2Result.inputs.population_short} (Hpop: {bxV2Result.inputs.h_pop} cm)</span>
+                        <span>
+                          {bxV2Pop === 'vietnam'
+                            ? 'NIN FH VN 2020'
+                            : bxV2Pop === 'caucasian'
+                            ? lang === 'vi'
+                              ? 'Chuẩn Châu Âu - Zurich'
+                              : 'Caucasian - Zurich'
+                            : lang === 'vi'
+                            ? 'Quần thể Tùy chỉnh'
+                            : 'Custom Population'}{' '}
+                          (Hpop: {bxV2Result.inputs.h_pop} cm)
+                        </span>
                       </div>
                       <div className="flex items-baseline justify-center gap-1 pt-1">
                         <span className="text-4xl font-extrabold tracking-tight">
@@ -1754,12 +1816,16 @@ function MainApp() {
                         <span className="text-base font-semibold">cm</span>
                       </div>
                       <div className="text-xs font-semibold opacity-90">
-                        Sai số chuẩn (RMSE): ± {bxV2Result.predictions.rmse_cm} cm
+                        {lang === 'vi'
+                          ? `Sai số chuẩn (RMSE): ± ${bxV2Result.predictions.rmse_cm} cm`
+                          : `Standard Error (RMSE): ± ${bxV2Result.predictions.rmse_cm} cm`}
                       </div>
                       <div className="pt-2 mt-2 border-t border-white/25 grid grid-cols-2 gap-2 text-[11px]">
                         <div className="bg-black/20 rounded p-2">
                           <div className="opacity-80 leading-tight">
-                            Khoảng tin cậy 68%<br />(±1 RMSE)
+                            {lang === 'vi' ? 'Khoảng tin cậy 68%' : '68% CI'}
+                            <br />
+                            (±1 RMSE)
                           </div>
                           <div className="font-bold text-xs mt-1">
                             {bxV2Result.predictions.confidence_interval_68_pct[0]} – {bxV2Result.predictions.confidence_interval_68_pct[1]} cm
@@ -1767,7 +1833,9 @@ function MainApp() {
                         </div>
                         <div className="bg-black/20 rounded p-2">
                           <div className="opacity-80 leading-tight">
-                            Khoảng tin cậy 95%<br />(±1.96 RMSE)
+                            {lang === 'vi' ? 'Khoảng tin cậy 95%' : '95% CI'}
+                            <br />
+                            (±1.96 RMSE)
                           </div>
                           <div className="font-bold text-xs mt-1">
                             {bxV2Result.predictions.confidence_interval_95_pct[0]} – {bxV2Result.predictions.confidence_interval_95_pct[1]} cm
@@ -1791,7 +1859,15 @@ function MainApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-3.5 h-3.5 rounded-xs accent-amber-600 cursor-pointer"
                           />
-                          <span>{bxV2Enabled ? 'Đã tích hợp vào Kết quả' : 'Tích hợp vào Kết quả'}</span>
+                          <span>
+                            {bxV2Enabled
+                              ? lang === 'vi'
+                                ? 'Đã tích hợp vào Kết quả'
+                                : 'Integrated into Results'
+                              : lang === 'vi'
+                              ? 'Tích hợp vào Kết quả'
+                              : 'Integrate into Results'}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -1799,7 +1875,11 @@ function MainApp() {
                     <div className="text-center py-6 space-y-3">
                       <div>
                         <span className="text-4xl font-bold opacity-80">--</span>
-                        <div className="text-xs opacity-85 mt-1 font-medium">Mô hình AHP Thodberg-Martin (2012)</div>
+                        <div className="text-xs opacity-85 mt-1 font-medium">
+                          {lang === 'vi'
+                            ? 'Mô hình AHP Thodberg-Martin (2012)'
+                            : 'AHP Thodberg-Martin (2012) Model'}
+                        </div>
                       </div>
                       <div>
                         <button
@@ -1818,7 +1898,15 @@ function MainApp() {
                             onClick={(e) => e.stopPropagation()}
                             className="w-3.5 h-3.5 rounded-xs accent-amber-600 cursor-pointer"
                           />
-                          <span>{bxV2Enabled ? 'Đã tích hợp vào Kết quả' : 'Tích hợp vào Kết quả'}</span>
+                          <span>
+                            {bxV2Enabled
+                              ? lang === 'vi'
+                                ? 'Đã tích hợp vào Kết quả'
+                                : 'Integrated into Results'
+                              : lang === 'vi'
+                              ? 'Tích hợp vào Kết quả'
+                              : 'Integrate into Results'}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -1913,7 +2001,7 @@ function MainApp() {
               {/* PAH TW1 Bar */}
               {useTw1 && !noDataError && (
                 <div className="flex flex-col items-center relative w-11 sm:w-14 md:w-16 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-xs md:text-sm font-bold text-slate-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
+                  <div className="hidden md:block absolute -top-8 text-xs md:text-sm font-bold text-slate-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
                     {pahResult ? `${pahResult.pah} cm` : '--'}
                   </div>
                   <div 
@@ -1927,7 +2015,7 @@ function MainApp() {
               {/* PAH BP Bar */}
               {useBp && !bpNoDataError && (
                 <div className="flex flex-col items-center relative w-11 sm:w-14 md:w-16 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-xs md:text-sm font-bold text-slate-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
+                  <div className="hidden md:block absolute -top-8 text-xs md:text-sm font-bold text-slate-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
                     {bpResult ? `${bpResult.pah} cm` : '--'}
                   </div>
                   <div 
@@ -1941,7 +2029,7 @@ function MainApp() {
               {/* PAH RWT Bar */}
               {useRwt && !rwtNoDataError && (
                 <div className="flex flex-col items-center relative w-11 sm:w-14 md:w-16 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-xs md:text-sm font-bold text-slate-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
+                  <div className="hidden md:block absolute -top-8 text-xs md:text-sm font-bold text-slate-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
                     {rwtResult ? `${rwtResult.pah} cm` : '--'}
                   </div>
                   <div 
@@ -1955,7 +2043,7 @@ function MainApp() {
               {/* AHP Thodberg-Martin (2012) Bar (only when ticked) */}
               {bxV2Enabled && bxV2Result && (
                 <div className="flex flex-col items-center relative w-11 sm:w-14 md:w-16 z-10 h-full justify-end">
-                  <div className="absolute -top-8 text-xs md:text-sm font-bold text-amber-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-amber-200 shadow-2xs whitespace-nowrap z-20">
+                  <div className="hidden md:block absolute -top-8 text-xs md:text-sm font-bold text-amber-800 bg-white/95 px-1.5 py-0.5 rounded-xs border border-amber-200 shadow-2xs whitespace-nowrap z-20">
                     {bxV2Result.predictions.final_predicted_height_cm} cm
                   </div>
                   <div 
@@ -1968,7 +2056,7 @@ function MainApp() {
 
               {/* MPH Bar */}
               <div className="flex flex-col items-center relative w-11 sm:w-14 md:w-16 z-10 h-full justify-end">
-                <div className="absolute -top-8 text-xs md:text-sm font-bold text-slate-600 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
+                <div className="hidden md:block absolute -top-8 text-xs md:text-sm font-bold text-slate-600 bg-white/95 px-1.5 py-0.5 rounded-xs border border-slate-200 shadow-2xs whitespace-nowrap z-20">
                   {mph ? `${mph} cm` : '--'}
                 </div>
                 <div 
@@ -1980,7 +2068,7 @@ function MainApp() {
 
               {/* VN'20 Bar */}
               <div className="flex flex-col items-center relative w-11 sm:w-14 md:w-16 z-10 h-full justify-end">
-                <div className="absolute -top-8 text-xs md:text-sm font-bold text-emerald-700 bg-white/95 px-1.5 py-0.5 rounded-xs border border-emerald-200 shadow-2xs whitespace-nowrap z-20">
+                <div className="hidden md:block absolute -top-8 text-xs md:text-sm font-bold text-emerald-700 bg-white/95 px-1.5 py-0.5 rounded-xs border border-emerald-200 shadow-2xs whitespace-nowrap z-20">
                   {vnAvgVal} cm
                 </div>
                 <div 
@@ -2013,14 +2101,14 @@ function MainApp() {
               </button>
             </div>
             {digitalSign && (
-              <div className="flex justify-end items-center gap-2 px-2 pb-1">
-                <span className="text-[11px] text-gray-400 italic">
+              <div className="flex justify-end items-center gap-2 pr-0 -mr-2 pb-1">
+                <span className="text-[11px] text-slate-400 italic">
                   {lang === 'vi' ? 'Đã kí nháy:' : 'Initialed:'}
                 </span>
                 <img
                   src="/assets/aistudio/IMG_8037_5c4ef58d.JPG"
                   alt="Chữ kí nháy"
-                  className="h-7 w-auto object-contain mix-blend-multiply opacity-90 select-none pointer-events-none"
+                  className="h-8 w-auto object-contain mix-blend-multiply opacity-95 select-none pointer-events-none"
                 />
               </div>
             )}
