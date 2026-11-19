@@ -295,6 +295,7 @@ function MainApp() {
 
   // BoneXpert AHP V3.0 (Beta) State
   const [bxV2Enabled, setBxV2Enabled] = useState(false);
+  const [preferredMethod, setPreferredMethod] = useState<'tm2012' | 'bp' | 'tw1' | 'rwt'>('bp');
   const [bxV2Pop, setBxV2Pop] = useState<BxPopulationMode>('vietnam');
   const [customPopMale, setCustomPopMale] = useState('168.1');
   const [customPopFemale, setCustomPopFemale] = useState('156.2');
@@ -409,6 +410,7 @@ function MainApp() {
     setBoneXpertError('');
     setAphv('');
     setBxV2Enabled(false);
+    setPreferredMethod('bp');
     setBxV2MenarcheHeight('');
     setIsTeleconsultation(false);
     setHideCoefficients(false);
@@ -508,6 +510,8 @@ function MainApp() {
   const useTw1 = selectedMethods.tw1 && availableMethods.tw1;
   const useBp = selectedMethods.bp && availableMethods.bp;
   const useRwt = selectedMethods.rwt && availableMethods.rwt;
+  const effectivePreferredMethod: 'tm2012' | 'bp' | 'tw1' | 'rwt' =
+    !bxV2Enabled && preferredMethod === 'tm2012' ? 'bp' : preferredMethod;
 
   useEffect(() => {
     if (noBoneAge) {
@@ -660,29 +664,32 @@ function MainApp() {
     const bulletLines: string[] = [];
 
     if (useBp && bpResult) {
+      const isPref = !noBoneAge && effectivePreferredMethod === 'bp';
       bulletLines.push(
         lang === 'vi'
-          ? `- Theo Công thức Bayley-Pinneau (1953): ${bpResult.pah} +/- ${bpResult.error}cm`
-          : `- According to Bayley-Pinneau (1953) formula: ${bpResult.pah} +/- ${bpResult.error}cm`
+          ? `- Theo Công thức Bayley-Pinneau (1953): ${bpResult.pah} +/- ${bpResult.error}cm${isPref ? ' *' : ''}`
+          : `- According to Bayley-Pinneau (1953) formula: ${bpResult.pah} +/- ${bpResult.error}cm${isPref ? ' *' : ''}`
       );
       conclusions.push(t.generateBPSent(String(bpResult.pah), String(bpResult.error), `${bpResult.fraction}`, hideCoefficients));
     }
 
     if (useTw1 && pahResult && usedCoeffs) {
+      const isPref = !noBoneAge && effectivePreferredMethod === 'tw1';
       bulletLines.push(
         lang === 'vi'
-          ? `- Theo Công thức Tanner-Whitehouse Mark I (1975): ${pahResult.pah} +/- ${pahResult.error}cm`
-          : `- According to Tanner-Whitehouse Mark I (1975) formula: ${pahResult.pah} +/- ${pahResult.error}cm`
+          ? `- Theo Công thức Tanner-Whitehouse Mark I (1975): ${pahResult.pah} +/- ${pahResult.error}cm${isPref ? ' *' : ''}`
+          : `- According to Tanner-Whitehouse Mark I (1975) formula: ${pahResult.pah} +/- ${pahResult.error}cm${isPref ? ' *' : ''}`
       );
       const formulaStr = `(H × ${usedCoeffs.alpha}) + (A × ${usedCoeffs.beta}) + (BA × ${usedCoeffs.gamma}) + ${usedCoeffs.c}`;
       conclusions.push(t.generateTW1Sent(String(pahResult.pah), String(pahResult.error), formulaStr, hideCoefficients));
     }
 
     if (useRwt && rwtResult) {
+      const isPref = !noBoneAge && effectivePreferredMethod === 'rwt';
       bulletLines.push(
         lang === 'vi'
-          ? `- Theo Công thức Roche-Wainer-Thissen (1975): ${rwtResult.pah} +/- ${rwtResult.error}cm`
-          : `- According to Roche-Wainer-Thissen (1975) formula: ${rwtResult.pah} +/- ${rwtResult.error}cm`
+          ? `- Theo Công thức Roche-Wainer-Thissen (1975): ${rwtResult.pah} +/- ${rwtResult.error}cm${isPref ? ' *' : ''}`
+          : `- According to Roche-Wainer-Thissen (1975) formula: ${rwtResult.pah} +/- ${rwtResult.error}cm${isPref ? ' *' : ''}`
       );
       const c = rwtResult.coefficients;
       const coeffsStr = `βRL=${c.betaRL}, βW=${c.betaW}, βMPS=${c.betaMPS}, βSA=${c.betaSA}, β0=${c.beta0}`;
@@ -690,6 +697,7 @@ function MainApp() {
     }
 
     if (bxV2Enabled && bxV2Result) {
+      const isPref = !noBoneAge && effectivePreferredMethod === 'tm2012';
       const popShortLabel =
         bxV2Pop === 'vietnam'
           ? 'NIN FH VN 2020'
@@ -702,8 +710,8 @@ function MainApp() {
           : `Custom ${bxV2Result.inputs.h_pop} cm`;
       bulletLines.push(
         lang === 'vi'
-          ? `- Theo Mô hình Thodberg-Martin (2012) (${popShortLabel}): ${bxV2Result.predictions.final_predicted_height_cm} +/- ${bxV2Result.predictions.rmse_cm}cm`
-          : `- According to Thodberg-Martin (2012) Model (${popShortLabel}): ${bxV2Result.predictions.final_predicted_height_cm} +/- ${bxV2Result.predictions.rmse_cm}cm`
+          ? `- Theo Mô hình Thodberg-Martin (2012) (${popShortLabel}): ${bxV2Result.predictions.final_predicted_height_cm} +/- ${bxV2Result.predictions.rmse_cm}cm${isPref ? ' *' : ''}`
+          : `- According to Thodberg-Martin (2012) Model (${popShortLabel}): ${bxV2Result.predictions.final_predicted_height_cm} +/- ${bxV2Result.predictions.rmse_cm}cm${isPref ? ' *' : ''}`
       );
       conclusions.push(
         t.generateBxV2Sent(
@@ -729,6 +737,7 @@ function MainApp() {
     }
 
     if (bulletLines.length > 0) {
+      const hasPreferredInBulletLines = bulletLines.some((line) => line.endsWith(' *'));
       const hasValidMenarcheH =
         gender === 'girl' &&
         menarche === 'post' &&
@@ -758,7 +767,7 @@ function MainApp() {
               estimatedAphv !== null ? ` (ước tính tuổi đạt đỉnh tăng trưởng APHV ~ ${estimatedAphv} tuổi)` : ''
             }`;
         const introLine = `Trẻ khám ngày (${formatDateSlash(examDate)}), ${childDesc}, ${ageYears} tuổi ${ageMonths || 0} tháng, hiện cao ${currentHeight} cm${weightPart}${mphPart}${menarchePart}${baPart}. Dựa vào độ trưởng thành của xương cổ - bàn tay trái và các chỉ số nhân trắc, tính chiều cao dự kiến khi trưởng thành (PAH):`;
-        const footerNote = `Lưu ý: Kết quả PAH thay đổi theo mỗi lần đánh giá và công thức, được bác sĩ dùng để theo dõi định kì, phát hiện bệnh lí, không dùng để tiên đoán.`;
+        const footerNote = `Lưu ý: Kết quả PAH thay đổi theo mỗi lần đánh giá và công thức, được bác sĩ dùng để theo dõi định kì, phát hiện bệnh lí, không dùng để tiên đoán.${hasPreferredInBulletLines ? ' * Phương pháp được khuyến cáo ưu tiên sử dụng.' : ''}`;
 
         resultTextStr = [headerLine, introLine, ...bulletLines, footerNote].join('\n');
       } else {
@@ -784,7 +793,7 @@ function MainApp() {
               estimatedAphv !== null ? ` (estimated APHV ~ ${estimatedAphv} years)` : ''
             }`;
         const introLine = `Exam date (${formatDateSlash(examDate)}), child ${childDesc}, ${ageYears} years ${ageMonths || 0} months old, current height ${currentHeight} cm${weightPart}${mphPart}${menarchePart}${baPart}. Based on left hand-wrist skeletal maturity and anthropometric indices, the predicted adult height (PAH) is:`;
-        const footerNote = `Note: PAH results vary with each assessment and formula, used by physicians for periodic monitoring and pathology detection, not for future prediction.`;
+        const footerNote = `Note: PAH results vary with each assessment and formula, used by physicians for periodic monitoring and pathology detection, not for future prediction.${hasPreferredInBulletLines ? ' * Recommended priority method for clinical use.' : ''}`;
 
         resultTextStr = [headerLine, introLine, ...bulletLines, footerNote].join('\n');
       }
@@ -836,6 +845,7 @@ function MainApp() {
     setBoneXpertError('');
     setAphv('');
     setBxV2Enabled(false);
+    setPreferredMethod('bp');
     setBxV2MenarcheHeight('');
     setIsTeleconsultation(false);
     setHideCoefficients(false);
@@ -854,7 +864,14 @@ function MainApp() {
   const buildReportPayload = (): ClinicalReportPayload => {
     const summaryRows: PahSummaryRow[] = [];
 
-    const addRow = (methodKey: string, methodName: string, pah: number, error: number, ci95Override?: [number, number]) => {
+    const addRow = (
+      methodKey: string,
+      methodName: string,
+      pah: number,
+      error: number,
+      ci95Override?: [number, number],
+      isPreferred?: boolean
+    ) => {
       const ci95Low = ci95Override ? ci95Override[0] : Math.round((pah - 1.96 * error) * 10) / 10;
       const ci95High = ci95Override ? ci95Override[1] : Math.round((pah + 1.96 * error) * 10) / 10;
       const diffMph = mph !== null ? Math.round((pah - mph) * 10) / 10 : null;
@@ -866,17 +883,39 @@ function MainApp() {
         ci95Low,
         ci95High,
         diffMph,
+        isPreferred,
       });
     };
 
     if (useBp && bpResult) {
-      addRow('bp', 'Bayley-Pinneau (1953)', Number(bpResult.pah), Number(bpResult.error));
+      addRow(
+        'bp',
+        'Bayley-Pinneau (1953)',
+        Number(bpResult.pah),
+        Number(bpResult.error),
+        undefined,
+        !noBoneAge && effectivePreferredMethod === 'bp'
+      );
     }
     if (useTw1 && pahResult) {
-      addRow('tw1', 'Tanner-Whitehouse Mark I (1975)', Number(pahResult.pah), Number(pahResult.error));
+      addRow(
+        'tw1',
+        'Tanner-Whitehouse Mark I (1975)',
+        Number(pahResult.pah),
+        Number(pahResult.error),
+        undefined,
+        !noBoneAge && effectivePreferredMethod === 'tw1'
+      );
     }
     if (useRwt && rwtResult) {
-      addRow('rwt', 'Roche-Wainer-Thissen (1975)', Number(rwtResult.pah), Number(rwtResult.error));
+      addRow(
+        'rwt',
+        'Roche-Wainer-Thissen (1975)',
+        Number(rwtResult.pah),
+        Number(rwtResult.error),
+        undefined,
+        !noBoneAge && effectivePreferredMethod === 'rwt'
+      );
     }
     if (bxV2Enabled && bxV2Result) {
       const popShortLabel =
@@ -894,7 +933,8 @@ function MainApp() {
         `Thodberg-Martin (2012) (${popShortLabel})`,
         Number(bxV2Result.predictions.final_predicted_height_cm),
         Number(bxV2Result.predictions.rmse_cm),
-        bxV2Result.predictions.confidence_interval_95_pct
+        bxV2Result.predictions.confidence_interval_95_pct,
+        !noBoneAge && effectivePreferredMethod === 'tm2012'
       );
     }
     if (boneXpertPah && boneXpertError) {
@@ -1211,6 +1251,37 @@ function MainApp() {
                 </div>
               )}
 
+              {!noBoneAge && (
+                <div className={`bg-white/80 p-3 rounded-md border ${theme.cardBorder} text-sm flex justify-between items-center gap-2 shadow-2xs`}>
+                  <label htmlFor="preferred-method-select" className={`${theme.labelDark} shrink-0`}>
+                    {lang === 'vi' ? 'Thuật toán Ưu tiên:' : 'Preferred Algorithm:'}
+                  </label>
+                  <select
+                    id="preferred-method-select"
+                    value={effectivePreferredMethod}
+                    onChange={(e) => {
+                      const val = e.target.value as 'tm2012' | 'bp' | 'tw1' | 'rwt';
+                      setPreferredMethod(val);
+                      if (val === 'tm2012' && !bxV2Enabled) {
+                        setBxV2Enabled(true);
+                      } else if (val === 'bp' && !selectedMethods.bp) {
+                        setSelectedMethods((prev) => ({ ...prev, bp: true }));
+                      } else if (val === 'tw1' && !selectedMethods.tw1) {
+                        setSelectedMethods((prev) => ({ ...prev, tw1: true }));
+                      } else if (val === 'rwt' && !selectedMethods.rwt) {
+                        setSelectedMethods((prev) => ({ ...prev, rwt: true }));
+                      }
+                    }}
+                    className={`px-2.5 py-1.5 rounded border bg-white font-bold text-sm text-[#1b365d] outline-none transition-all shadow-2xs cursor-pointer ${theme.inputBorder}`}
+                  >
+                    <option value="tm2012">Thodberg-Martin</option>
+                    <option value="bp">Bayley-Pinneau</option>
+                    {!isBoneAgeDeviated && <option value="tw1">Tanner-Whitehouse I</option>}
+                    {!isBoneAgeDeviated && <option value="rwt">Roche-Wainer-Thissen</option>}
+                  </select>
+                </div>
+              )}
+
             </div>
 
             {/* Right Column */}
@@ -1302,7 +1373,11 @@ function MainApp() {
                             <input
                               type="checkbox"
                               checked={bxV2Enabled}
-                              onChange={(e) => setBxV2Enabled(e.target.checked)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setBxV2Enabled(checked);
+                                setPreferredMethod(checked ? 'tm2012' : 'bp');
+                              }}
                               className="rounded-xs border-slate-300 accent-[#1b365d] w-4 h-4"
                             />
                             <span>Thodberg-Martin</span>
@@ -1316,7 +1391,13 @@ function MainApp() {
                         <input 
                           type="checkbox" 
                           checked={isTeleconsultation} 
-                          onChange={(e) => setIsTeleconsultation(e.target.checked)} 
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setIsTeleconsultation(checked);
+                            if (checked) {
+                              setDigitalSign(false);
+                            }
+                          }} 
                           className="rounded-xs border-slate-300 accent-[#1b365d] w-4 h-4" 
                         />
                         <span className={theme.labelDark}>{t.teleconsultation}</span>
@@ -1330,12 +1411,13 @@ function MainApp() {
                         />
                         <span className={theme.labelDark}>{t.hideCoefficients}</span>
                       </label>
-                      <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                      <label className={`flex items-center gap-2 text-sm font-medium transition-opacity ${isTeleconsultation ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input 
                           type="checkbox" 
-                          checked={digitalSign} 
+                          checked={digitalSign && !isTeleconsultation} 
+                          disabled={isTeleconsultation}
                           onChange={(e) => setDigitalSign(e.target.checked)} 
-                          className="rounded-xs border-slate-300 accent-[#1b365d] w-4 h-4" 
+                          className={`rounded-xs border-slate-300 accent-[#1b365d] w-4 h-4 ${isTeleconsultation ? 'cursor-not-allowed' : ''}`} 
                         />
                         <span className={theme.labelDark}>
                           {lang === 'vi' ? 'Kí số' : 'Digital Sign'}
@@ -1845,7 +1927,11 @@ function MainApp() {
                       <div className="pt-1.5">
                         <button
                           type="button"
-                          onClick={() => setBxV2Enabled(!bxV2Enabled)}
+                          onClick={() => {
+                            const next = !bxV2Enabled;
+                            setBxV2Enabled(next);
+                            setPreferredMethod(next ? 'tm2012' : 'bp');
+                          }}
                           className={`inline-flex items-center justify-center gap-2 text-xs font-bold px-4 py-1.5 rounded transition-all cursor-pointer select-none shadow-xs ${
                             bxV2Enabled
                               ? 'bg-amber-400 text-slate-900 hover:bg-amber-300 ring-1 ring-white/70'
@@ -1855,7 +1941,11 @@ function MainApp() {
                           <input
                             type="checkbox"
                             checked={bxV2Enabled}
-                            onChange={(e) => setBxV2Enabled(e.target.checked)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setBxV2Enabled(checked);
+                              setPreferredMethod(checked ? 'tm2012' : 'bp');
+                            }}
                             onClick={(e) => e.stopPropagation()}
                             className="w-3.5 h-3.5 rounded-xs accent-amber-600 cursor-pointer"
                           />
@@ -1884,7 +1974,11 @@ function MainApp() {
                       <div>
                         <button
                           type="button"
-                          onClick={() => setBxV2Enabled(!bxV2Enabled)}
+                          onClick={() => {
+                            const next = !bxV2Enabled;
+                            setBxV2Enabled(next);
+                            setPreferredMethod(next ? 'tm2012' : 'bp');
+                          }}
                           className={`inline-flex items-center justify-center gap-2 text-xs font-bold px-4 py-1.5 rounded transition-all cursor-pointer select-none shadow-xs ${
                             bxV2Enabled
                               ? 'bg-amber-400 text-slate-900 hover:bg-amber-300 ring-1 ring-white/70'
@@ -1894,7 +1988,11 @@ function MainApp() {
                           <input
                             type="checkbox"
                             checked={bxV2Enabled}
-                            onChange={(e) => setBxV2Enabled(e.target.checked)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setBxV2Enabled(checked);
+                              setPreferredMethod(checked ? 'tm2012' : 'bp');
+                            }}
                             onClick={(e) => e.stopPropagation()}
                             className="w-3.5 h-3.5 rounded-xs accent-amber-600 cursor-pointer"
                           />
@@ -1942,9 +2040,19 @@ function MainApp() {
                       <div className={`absolute -top-3 left-4 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded border ${theme.cardBorder} ${theme.labelDark} shadow-2xs`}>
                         {t.conclusionTitle}
                       </div>
-                      <p className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
-                        {resultTextStr}
-                      </p>
+                      <div className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
+                        {resultTextStr.split('\n').map((line, idx) => {
+                          if (line.endsWith(' *')) {
+                            return (
+                              <div key={idx}>
+                                <span>{line.slice(0, -2)} </span>
+                                <span className="font-black text-lg leading-none align-middle">*</span>
+                              </div>
+                            );
+                          }
+                          return <div key={idx}>{line}</div>;
+                        })}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
                       <button 
@@ -2100,7 +2208,7 @@ function MainApp() {
                 <Info size={14} /> {t.noteTitle} {showNote ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             </div>
-            {digitalSign && (
+            {digitalSign && !isTeleconsultation && (
               <div className="flex justify-end items-center gap-2 pr-0 -mr-2 pb-1">
                 <span className="text-[11px] text-slate-400 italic">
                   {lang === 'vi' ? 'Đã kí nháy:' : 'Initialed:'}

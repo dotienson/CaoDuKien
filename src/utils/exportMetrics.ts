@@ -12,6 +12,7 @@ import {
   WidthType,
   ImageRun,
   VerticalAlign,
+  LineRuleType,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import pdfMake from 'pdfmake/build/pdfmake';
@@ -37,6 +38,7 @@ export interface PahSummaryRow {
   ci95Low: number;
   ci95High: number;
   diffMph: number | null;
+  isPreferred?: boolean;
   note?: string;
 }
 
@@ -177,6 +179,86 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
     };
     img.onerror = () => resolve(null);
     img.src = '/assets/aistudio/IMG_8037_5c4ef58d.JPG';
+  });
+}
+
+export async function loadTeleconsultStampImage(): Promise<ForestPlotRenderResult | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const targetW = 600;
+        const targetH = Math.round((img.height / img.width) * targetW);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+
+        const imageData = ctx.getImageData(0, 0, targetW, targetH);
+        const data = imageData.data;
+        let minX = targetW;
+        let minY = targetH;
+        let maxX = 0;
+        let maxY = 0;
+
+        for (let y = 0; y < targetH; y++) {
+          for (let x = 0; x < targetW; x++) {
+            const idx = (y * targetW + x) * 4;
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const a = data[idx + 3];
+            // Detect non-transparent and non-pure-white pixels of the stamp
+            if (a > 25 && !(r > 245 && g > 245 && b > 245)) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        const pad = 4;
+        const cropX = Math.max(0, minX - pad);
+        const cropY = Math.max(0, minY - pad);
+        const cropW = maxX >= minX ? Math.min(targetW - cropX, maxX - minX + 1 + pad * 2) : targetW;
+        const cropH = maxY >= minY ? Math.min(targetH - cropY, maxY - minY + 1 + pad * 2) : targetH;
+
+        const croppedCanvas = document.createElement('canvas');
+        croppedCanvas.width = cropW;
+        croppedCanvas.height = cropH;
+        const croppedCtx = croppedCanvas.getContext('2d');
+        if (!croppedCtx) {
+          resolve(null);
+          return;
+        }
+        croppedCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+        const dataUrl = croppedCanvas.toDataURL('image/png');
+        const base64 = dataUrl.split(',')[1] || '';
+        const binaryStr = atob(base64);
+        const uint8Array = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          uint8Array[i] = binaryStr.charCodeAt(i);
+        }
+        resolve({
+          uint8Array,
+          dataUrl,
+          width: cropW,
+          height: cropH,
+        });
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = '/assets/aistudio/99.99__51474235.png';
   });
 }
 
@@ -692,7 +774,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
       patientData.mph && !isNaN(Number(patientData.mph)) ? Number(patientData.mph) : null;
     const forestPlot =
       chartData && chartData.length > 0 ? generateForestPlotImage(chartData, numericMph, lang) : null;
-    const signatureImg = patientData.digitalSign ? await loadSignatureImage() : null;
+    const signatureImg =
+      patientData.digitalSign && !patientData.isTeleconsultation ? await loadSignatureImage() : null;
+    const teleStampImg = patientData.isTeleconsultation ? await loadTeleconsultStampImage() : null;
 
     const blackBoxBorders = {
       top: { style: BorderStyle.SINGLE, size: 6, color: '000000' },
@@ -760,8 +844,17 @@ export async function exportDocx(payload: ClinicalReportPayload) {
 
     const footerPrefix = isEn ? 'Note: ' : 'Lưu ý: ';
     const footerBodyText = isEn
-      ? 'Predicted results depend on skeletal maturity at X-ray assessment, genetic potential, and nutritional-endocrine factors. This report supports periodic growth monitoring and specialist clinical decision-making, not for deterministic forecasting.'
-      : 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.';
+      ? `Predicted results depend on skeletal maturity at X-ray assessment, genetic potential, and nutritional-endocrine factors. This report supports periodic growth monitoring and specialist clinical decision-making, not for deterministic forecasting.${
+          patientData.isTeleconsultation
+            ? ' Results are calculated by Dr. Do Tien Son based on clinical information provided remotely by the attending physician.'
+            : ''
+        }`
+      : `Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.${
+          patientData.isTeleconsultation
+            ? ' Kết quả được BS. Đỗ Tiến Sơn tính dựa trên thông tin được bác sĩ lâm sàng cung cấp từ xa.'
+            : ''
+        }`;
+    const footerFontSize = patientData.isTeleconsultation ? 13 : 14;
 
     // Build Section II Summary Table Rows
     const summaryTableRows: TableRow[] = [
@@ -846,7 +939,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                 verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
-                    children: [new TextRun({ text: row.methodName, bold: true, size: 20 })],
+                    children: [
+                      new TextRun({ text: row.methodName, bold: true, size: 20 }),
+                      ...(row.isPreferred
+                        ? [new TextRun({ text: ' *', bold: true, size: 28, color: '000000' })]
+                        : []),
+                    ],
                   }),
                 ],
               }),
@@ -940,6 +1038,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
     }
 
     const conclusionLines = filterReportConclusionLines(conclusionText);
+    const hasPreferredRow = summaryRows.some((r) => r.isPreferred);
 
     const doc = new Document({
       styles: {
@@ -1046,13 +1145,13 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           text: footerPrefix,
                           bold: true,
                           italics: true,
-                          size: 14, // 7pt
+                          size: footerFontSize,
                           color: '333333',
                         }),
                         new TextRun({
                           text: footerBodyText,
                           italics: true,
-                          size: 14, // 7pt
+                          size: footerFontSize,
                           color: '333333',
                         }),
                       ],
@@ -1074,58 +1173,133 @@ export async function exportDocx(payload: ClinicalReportPayload) {
               },
               rows: [
                 new TableRow({
-                  children: [
-                    new TableCell({
-                      width: { size: 70, type: WidthType.PERCENTAGE },
-                      margins: { top: 0, bottom: 60, left: 0, right: 100 },
-                      children: [
-                        new Paragraph({
-                          spacing: { before: 0, after: 10 },
+                  children: teleStampImg
+                    ? [
+                        new TableCell({
+                          width: { size: 37, type: WidthType.PERCENTAGE },
+                          verticalAlign: VerticalAlign.CENTER,
+                          margins: { top: 0, bottom: 60, left: 0, right: 40 },
                           children: [
-                            new TextRun({
-                              text: 'PAH Calc',
-                              bold: true,
-                              size: 32, // 16pt
-                              color: '000000',
+                            new Paragraph({
+                              spacing: { before: 0, after: 10 },
+                              children: [
+                                new TextRun({
+                                  text: 'PAH Calc',
+                                  bold: true,
+                                  size: 32, // 16pt
+                                  color: '000000',
+                                }),
+                                new TextRun({
+                                  text: '®',
+                                  bold: true,
+                                  size: 22,
+                                  superScript: true,
+                                  color: '000000',
+                                }),
+                                new TextRun({
+                                  text: ' by Dr.Son',
+                                  bold: false,
+                                  size: 26, // 13pt
+                                  color: '333333',
+                                }),
+                              ],
                             }),
-                            new TextRun({
-                              text: '®',
-                              bold: true,
-                              size: 22,
-                              superScript: true,
-                              color: '000000',
+                          ],
+                        }),
+                        new TableCell({
+                          width: { size: 26, type: WidthType.PERCENTAGE },
+                          verticalAlign: VerticalAlign.CENTER,
+                          margins: { top: 0, bottom: 50, left: 20, right: 20 },
+                          children: [
+                            new Paragraph({
+                              alignment: AlignmentType.CENTER,
+                              spacing: { before: 0, after: 0 },
+                              children: [
+                                new ImageRun({
+                                  data: teleStampImg.uint8Array,
+                                  transformation: {
+                                    width: 96,
+                                    height: Math.round((96 / teleStampImg.width) * teleStampImg.height),
+                                  },
+                                  type: 'png',
+                                }),
+                              ],
                             }),
-                            new TextRun({
-                              text: ' by Dr.Son',
-                              bold: false,
-                              size: 26, // 13pt
-                              color: '333333',
+                          ],
+                        }),
+                        new TableCell({
+                          width: { size: 37, type: WidthType.PERCENTAGE },
+                          margins: { top: 0, bottom: 60, left: 40, right: 0 },
+                          verticalAlign: VerticalAlign.BOTTOM,
+                          children: [
+                            new Paragraph({
+                              alignment: AlignmentType.RIGHT,
+                              spacing: { before: 0, after: 10 },
+                              children: [
+                                new TextRun({
+                                  text: isEn
+                                    ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                                    : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+                                  size: 19,
+                                  italics: true,
+                                }),
+                              ],
+                            }),
+                          ],
+                        }),
+                      ]
+                    : [
+                        new TableCell({
+                          width: { size: 70, type: WidthType.PERCENTAGE },
+                          margins: { top: 0, bottom: 60, left: 0, right: 100 },
+                          children: [
+                            new Paragraph({
+                              spacing: { before: 0, after: 10 },
+                              children: [
+                                new TextRun({
+                                  text: 'PAH Calc',
+                                  bold: true,
+                                  size: 32, // 16pt
+                                  color: '000000',
+                                }),
+                                new TextRun({
+                                  text: '®',
+                                  bold: true,
+                                  size: 22,
+                                  superScript: true,
+                                  color: '000000',
+                                }),
+                                new TextRun({
+                                  text: ' by Dr.Son',
+                                  bold: false,
+                                  size: 26, // 13pt
+                                  color: '333333',
+                                }),
+                              ],
+                            }),
+                          ],
+                        }),
+                        new TableCell({
+                          width: { size: 30, type: WidthType.PERCENTAGE },
+                          margins: { top: 0, bottom: 60, left: 100, right: 0 },
+                          verticalAlign: VerticalAlign.BOTTOM,
+                          children: [
+                            new Paragraph({
+                              alignment: AlignmentType.RIGHT,
+                              spacing: { before: 0, after: 10 },
+                              children: [
+                                new TextRun({
+                                  text: isEn
+                                    ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                                    : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+                                  size: 19,
+                                  italics: true,
+                                }),
+                              ],
                             }),
                           ],
                         }),
                       ],
-                    }),
-                    new TableCell({
-                      width: { size: 30, type: WidthType.PERCENTAGE },
-                      margins: { top: 0, bottom: 60, left: 100, right: 0 },
-                      verticalAlign: VerticalAlign.BOTTOM,
-                      children: [
-                        new Paragraph({
-                          alignment: AlignmentType.RIGHT,
-                          spacing: { before: 0, after: 10 },
-                          children: [
-                            new TextRun({
-                              text: isEn
-                                ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
-                                : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
-                              size: 19,
-                              italics: true,
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  ],
                 }),
               ],
             }),
@@ -1335,22 +1509,103 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                   children: [
                     new TableCell({
                       shading: { fill: 'FFFFFF' },
-                      margins: { top: 80, bottom: 80, left: 140, right: 140 },
-                      children: conclusionLines.map((line) => {
-                        const isBullet = line.startsWith('-');
-                        return new Paragraph({
-                          spacing: { before: 30, after: 30 },
-                          alignment: AlignmentType.JUSTIFIED,
-                          children: [
-                            new TextRun({
-                              text: line,
-                              bold: isBullet,
-                              size: 20,
-                              color: '000000',
-                            }),
-                          ],
-                        });
-                      }),
+                      margins: { top: 65, bottom: 65, left: 140, right: 140 },
+                      children: [
+                        ...conclusionLines.map((line) => {
+                          const isBullet = line.startsWith('-');
+                          const hasStarSuffix = line.endsWith(' *');
+                          const coreLine = hasStarSuffix ? line.slice(0, -2) : line;
+                          const colonIdx = isBullet ? coreLine.indexOf(': ') : -1;
+
+                          let runChildren: TextRun[];
+                          if (isBullet && colonIdx !== -1) {
+                            const prefixPart = coreLine.slice(0, colonIdx + 2);
+                            const valuePart = coreLine.slice(colonIdx + 2);
+                            runChildren = [
+                              new TextRun({
+                                text: prefixPart,
+                                bold: true,
+                                size: 20,
+                                color: '000000',
+                              }),
+                              new TextRun({
+                                text: valuePart,
+                                bold: true,
+                                size: 20,
+                                color: '8B0000',
+                              }),
+                              ...(hasStarSuffix
+                                ? [
+                                    new TextRun({
+                                      text: ' *',
+                                      bold: true,
+                                      size: 25,
+                                      color: '8B0000',
+                                    }),
+                                  ]
+                                : []),
+                            ];
+                          } else {
+                            runChildren = [
+                              new TextRun({
+                                text: coreLine,
+                                bold: isBullet,
+                                size: 20,
+                                color: '000000',
+                              }),
+                              ...(hasStarSuffix
+                                ? [
+                                    new TextRun({
+                                      text: ' *',
+                                      bold: true,
+                                      size: 25,
+                                      color: '8B0000',
+                                    }),
+                                  ]
+                                : []),
+                            ];
+                          }
+
+                          return new Paragraph({
+                            spacing: {
+                              before: 0,
+                              after: 0,
+                              line: 240,
+                              lineRule: LineRuleType.EXACT,
+                            },
+                            alignment: isBullet ? AlignmentType.LEFT : AlignmentType.JUSTIFIED,
+                            children: runChildren,
+                          });
+                        }),
+                        ...(hasPreferredRow
+                          ? [
+                              new Paragraph({
+                                spacing: {
+                                  before: 0,
+                                  after: 0,
+                                  line: 240,
+                                  lineRule: LineRuleType.EXACT,
+                                },
+                                alignment: AlignmentType.LEFT,
+                                children: [
+                                  new TextRun({
+                                    text: '* ',
+                                    bold: true,
+                                    size: 24,
+                                    color: '000000',
+                                  }),
+                                  new TextRun({
+                                    text: isEn
+                                      ? 'Recommended priority method for clinical use'
+                                      : 'Phương pháp được khuyến cáo ưu tiên sử dụng',
+                                    size: 20,
+                                    color: '000000',
+                                  }),
+                                ],
+                              }),
+                            ]
+                          : []),
+                      ],
                     }),
                   ],
                 }),
@@ -1420,7 +1675,9 @@ export async function exportPdf(payload: ClinicalReportPayload) {
       patientData.mph && !isNaN(Number(patientData.mph)) ? Number(patientData.mph) : null;
     const forestPlot =
       chartData && chartData.length > 0 ? generateForestPlotImage(chartData, numericMph, lang) : null;
-    const signatureImg = patientData.digitalSign ? await loadSignatureImage() : null;
+    const signatureImg =
+      patientData.digitalSign && !patientData.isTeleconsultation ? await loadSignatureImage() : null;
+    const teleStampImg = patientData.isTeleconsultation ? await loadTeleconsultStampImage() : null;
 
     const caMinusBaAndAphvLine =
       !patientData.noBoneAge &&
@@ -1470,8 +1727,17 @@ export async function exportPdf(payload: ClinicalReportPayload) {
 
     const footerPrefix = isEn ? 'Note: ' : 'Lưu ý: ';
     const footerBodyText = isEn
-      ? 'Predicted results depend on skeletal maturity at X-ray assessment, genetic potential, and nutritional-endocrine factors. This report supports periodic growth monitoring and specialist clinical decision-making, not for deterministic forecasting.'
-      : 'Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.';
+      ? `Predicted results depend on skeletal maturity at X-ray assessment, genetic potential, and nutritional-endocrine factors. This report supports periodic growth monitoring and specialist clinical decision-making, not for deterministic forecasting.${
+          patientData.isTeleconsultation
+            ? ' Results are calculated by Dr. Do Tien Son based on clinical information provided remotely by the attending physician.'
+            : ''
+        }`
+      : `Kết quả dự đoán phụ thuộc vào độ trưởng thành xương tại thời điểm chụp, tiềm năng di truyền và các yếu tố dinh dưỡng - nội tiết. Phiếu kết quả này phục vụ công tác theo dõi tăng trưởng định kỳ và hỗ trợ quyết định lâm sàng của bác sĩ chuyên khoa, không dùng để tiên đoán.${
+          patientData.isTeleconsultation
+            ? ' Kết quả được BS. Đỗ Tiến Sơn tính dựa trên thông tin được bác sĩ lâm sàng cung cấp từ xa.'
+            : ''
+        }`;
+    const pdfFooterFontSize = patientData.isTeleconsultation ? 6.5 : 7.0;
 
     const blackGridLayout = {
       hLineWidth: () => 0.8,
@@ -1546,7 +1812,17 @@ export async function exportPdf(payload: ClinicalReportPayload) {
         },
       ],
       ...summaryRows.map((row) => [
-        { text: row.methodName, bold: true, fontSize: 9.5, alignment: 'left' },
+        {
+          text: row.isPreferred
+            ? [
+                { text: row.methodName, bold: true, fontSize: 9.5 },
+                { text: ' *', bold: true, fontSize: 13.5 },
+              ]
+            : row.methodName,
+          bold: true,
+          fontSize: 9.5,
+          alignment: 'left',
+        },
         {
           text: `${row.pah.toFixed(1)} ± ${row.error.toFixed(1)}`,
           bold: true,
@@ -1594,6 +1870,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
     }
 
     const conclusionLines = filterReportConclusionLines(conclusionText);
+    const hasPreferredRow = summaryRows.some((r) => r.isPreferred);
 
     const docDefinition: any = {
       pageSize: 'A4',
@@ -1648,13 +1925,13 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                   text: footerPrefix,
                   bold: true,
                   italics: true,
-                  fontSize: 7.0,
+                  fontSize: pdfFooterFontSize,
                   color: '#333333',
                 },
                 {
                   text: footerBodyText,
                   italics: true,
-                  fontSize: 7.0,
+                  fontSize: pdfFooterFontSize,
                   color: '#333333',
                 },
               ],
@@ -1663,27 +1940,58 @@ export async function exportPdf(payload: ClinicalReportPayload) {
       content: [
         // BRAND HEADER
         {
-          columns: [
-            {
-              width: '*',
-              text: [
-                { text: 'PAH Calc', bold: true, fontSize: 15, color: '#000000' },
-                { text: '®', bold: true, fontSize: 10.5, sup: true, color: '#000000' },
-                { text: ' by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
-              ],
-              lineHeight: 1.05,
-            },
-            {
-              width: 'auto',
-              text: isEn
-                ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
-                : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
-              italics: true,
-              fontSize: 9.5,
-              alignment: 'right',
-              margin: [0, 4, 0, 0],
-            },
-          ],
+          columns:
+            teleStampImg && teleStampImg.dataUrl
+              ? [
+                  {
+                    width: '37%',
+                    text: [
+                      { text: 'PAH Calc', bold: true, fontSize: 15, color: '#000000' },
+                      { text: '®', bold: true, fontSize: 10.5, sup: true, color: '#000000' },
+                      { text: ' by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
+                    ],
+                    lineHeight: 1.05,
+                    margin: [0, 3, 0, 0],
+                  },
+                  {
+                    width: '26%',
+                    image: teleStampImg.dataUrl,
+                    fit: [92, 30],
+                    alignment: 'center',
+                    margin: [0, -2, 0, 2],
+                  },
+                  {
+                    width: '37%',
+                    text: isEn
+                      ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                      : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+                    italics: true,
+                    fontSize: 9.5,
+                    alignment: 'right',
+                    margin: [0, 6, 0, 0],
+                  },
+                ]
+              : [
+                  {
+                    width: '*',
+                    text: [
+                      { text: 'PAH Calc', bold: true, fontSize: 15, color: '#000000' },
+                      { text: '®', bold: true, fontSize: 10.5, sup: true, color: '#000000' },
+                      { text: ' by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
+                    ],
+                    lineHeight: 1.05,
+                  },
+                  {
+                    width: 'auto',
+                    text: isEn
+                      ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                      : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+                    italics: true,
+                    fontSize: 9.5,
+                    alignment: 'right',
+                    margin: [0, 4, 0, 0],
+                  },
+                ],
         },
         {
           canvas: [
@@ -1889,16 +2197,84 @@ export async function exportPdf(payload: ClinicalReportPayload) {
               ],
               [
                 {
-                  stack: conclusionLines.map((line) => {
-                    const isBullet = line.startsWith('-');
-                    return {
-                      text: line,
-                      bold: isBullet,
-                      fontSize: 9.5,
-                      alignment: 'justify',
-                      margin: [0, 1.5, 0, 1.5],
-                    };
-                  }),
+                  stack: [
+                    ...conclusionLines.map((line) => {
+                      const isBullet = line.startsWith('-');
+                      const hasStarSuffix = line.endsWith(' *');
+                      const coreLine = hasStarSuffix ? line.slice(0, -2) : line;
+                      const colonIdx = isBullet ? coreLine.indexOf(': ') : -1;
+
+                      if (isBullet && colonIdx !== -1) {
+                        const prefixPart = coreLine.slice(0, colonIdx + 2);
+                        const valuePart = coreLine.slice(colonIdx + 2);
+                        return {
+                          text: [
+                            { text: prefixPart, bold: true, fontSize: 9.5, color: '#000000' },
+                            { text: valuePart, bold: true, fontSize: 9.5, color: '#8B0000' },
+                            ...(hasStarSuffix
+                              ? [
+                                  {
+                                    text: ' *',
+                                    bold: true,
+                                    fontSize: 11.5,
+                                    lineHeight: 0.95,
+                                    color: '#8B0000',
+                                  },
+                                ]
+                              : []),
+                          ],
+                          alignment: 'left',
+                          lineHeight: 1.18,
+                          margin: [0, 0, 0, 0],
+                        };
+                      }
+
+                      return {
+                        text: hasStarSuffix
+                          ? [
+                              { text: coreLine, bold: isBullet, fontSize: 9.5, color: '#000000' },
+                              {
+                                text: ' *',
+                                bold: true,
+                                fontSize: 11.5,
+                                lineHeight: 0.95,
+                                color: '#8B0000',
+                              },
+                            ]
+                          : coreLine,
+                        bold: isBullet,
+                        fontSize: 9.5,
+                        alignment: isBullet ? 'left' : 'justify',
+                        lineHeight: 1.18,
+                        margin: [0, 0, 0, 0],
+                      };
+                    }),
+                    ...(hasPreferredRow
+                      ? [
+                          {
+                            text: [
+                              {
+                                text: '* ',
+                                bold: true,
+                                fontSize: 11.5,
+                                lineHeight: 0.95,
+                                color: '#000000',
+                              },
+                              {
+                                text: isEn
+                                  ? 'Recommended priority method for clinical use'
+                                  : 'Phương pháp được khuyến cáo ưu tiên sử dụng',
+                                fontSize: 9.5,
+                                color: '#000000',
+                              },
+                            ],
+                            alignment: 'left',
+                            lineHeight: 1.18,
+                            margin: [0, 0, 0, 0],
+                          },
+                        ]
+                      : []),
+                  ],
                 },
               ],
             ],
