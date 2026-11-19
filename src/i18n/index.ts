@@ -1,7 +1,7 @@
 export const translations = {
   vi: {
-    title: "OmniAPH® - Bác sĩ Đỗ Tiến Sơn",
-    subtitle: "Dự đoán APH đa mô thức",
+    title: "PAH Calc by Dr.Son",
+    subtitle: "Tính chiều cao trưởng thành",
     subtitleNote: "BS. Đỗ Tiến Sơn - Bệnh viện Đa khoa Tâm Anh\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nUỷ viên Uỷ ban Đào tạo - Hội Nội tiết Nhi châu Âu",
     espeMember: "",
     name: "Tên/ID của trẻ",
@@ -149,10 +149,21 @@ export const translations = {
       error: bxErr || '...',
       endText: ` cm (AsiChi), đỉnh tăng trưởng rơi vào ${aphvX || '...'} tuổi (Zurich LS).`
     }),
+    generateBxV2Sent: (pah: string, error: string, popLabel: string, ci95: [number, number], gpPct: number, hRaw: number, wPop: number, hideCoefficients?: boolean) => ({
+      methodName: 'Mô hình AHP Thodberg-Martin (2012)',
+      midText: hideCoefficients
+        ? ` (${popLabel}), sử dụng động học phi tuyến & suy luận Bayesian 4 nhánh chuẩn hóa, dự đoán chiều cao trưởng thành là: `
+        : ` (${popLabel}, gp=${gpPct}%, H_raw=${hRaw}cm, w_pop=${wPop}), dự đoán chiều cao trưởng thành là: `,
+      pah: pah,
+      error: error,
+      endText: ` cm (95% CI: ${ci95[0]} – ${ci95[1]} cm).`
+    }),
+    resultTextBxV2Only: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, pah: string, error: string, popLabel: string, ci95: [number, number], isTeleconsultation?: boolean) =>
+      `* ${isTeleconsultation ? 'HỘI CHẨN TỪ XA VỚI BÁC SĨ SƠN VỀ CHIỀU CAO KHI TRƯỞNG THÀNH' : 'DỰ KIẾN CHIỀU CAO KHI TRƯỞNG THÀNH'}\nBằng Mô hình AHP Thodberg-Martin (2012) (${popLabel}), chiều cao cuối (trẻ ${genderStr}${name ? ` ${name}` : ''}, ${ageY} tuổi ${ageM} tháng, hiện cao ${currentH}cm${weight ? `, nặng ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, tuổi xương ~ ${boneAge} tuổi) dự kiến như sau: ${pah}cm +/- ${error}cm (95% CI: ${ci95[0]} - ${ci95[1]}cm). Kết quả tính phục vụ cho theo dõi định kì và chỉ định lâm sàng, không mang tính tiên đoán. Kết quả tính ngày: ${new Date().toLocaleDateString('vi-VN')} - OmniAPH® 8.2.`,
   },
   en: {
-    title: "OmniAPH® - Bác sĩ Đỗ Tiến Sơn",
-    subtitle: "Advanced Height Prediction",
+    title: "PAH Calc by Dr.Son",
+    subtitle: "Tính chiều cao trưởng thành",
     subtitleNote: "Dr. Do Tien Son - Tam Anh General Hospital\nESPE Fellow - Queen's Medical Centre (NUH, UK)\nMember of the Training Committee - ESPE",
     espeMember: "",
     name: "Child's Name/ID",
@@ -297,6 +308,17 @@ export const translations = {
       error: bxErr || '...',
       endText: ` cm (AsiChi reference), APHV at ${aphvX || '...'} years (Zurich LS).`
     }),
+    generateBxV2Sent: (pah: string, error: string, popLabel: string, ci95: [number, number], gpPct: number, hRaw: number, wPop: number, hideCoefficients?: boolean) => ({
+      methodName: 'Thodberg-Martin (2012) AHP Model',
+      midText: hideCoefficients
+        ? ` (${popLabel}), using nonlinear Gaussian dynamics & 4-branch Bayesian inference, predicts adult height: `
+        : ` (${popLabel}, gp=${gpPct}%, H_raw=${hRaw}cm, w_pop=${wPop}), predicts adult height: `,
+      pah: pah,
+      error: error,
+      endText: ` cm (95% CI: ${ci95[0]} – ${ci95[1]} cm).`
+    }),
+    resultTextBxV2Only: (name: string, genderStr: string, ageY: string, ageM: string, currentH: string, weight: string, mph: string, boneAge: string, pah: string, error: string, popLabel: string, ci95: [number, number], isTeleconsultation?: boolean) =>
+      `* ${isTeleconsultation ? 'TELECONSULTATION WITH DR. SON FOR PREDICTED ADULT HEIGHT' : 'PREDICTED ADULT HEIGHT'}\nUsing the Thodberg-Martin (2012) AHP model (${popLabel}), the predicted adult height (${name ? `${name} ` : ''}(${genderStr}), ${ageY} years ${ageM} months old, height ${currentH}cm${weight ? `, weight ${weight}kg` : ''}${mph ? `, MPH ${mph}cm` : ''}, boneAge ~ ${boneAge} years) is: ${pah}cm +/- ${error}cm (95% CI: ${ci95[0]} - ${ci95[1]}cm). The calculated result is for periodic monitoring and clinical indications, not predictive. Calculation date: ${new Date().toLocaleDateString('en-US')} - OmniAPH® 8.2.`,
   }
 };
 
