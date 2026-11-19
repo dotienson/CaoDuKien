@@ -99,7 +99,6 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
   if (typeof document === 'undefined') return null;
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
         const targetW = 480;
@@ -185,7 +184,6 @@ async function loadSignatureImage(): Promise<ForestPlotRenderResult | null> {
 export async function loadTeleconsultStampImage(): Promise<ForestPlotRenderResult | null> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
         const targetW = 600;
@@ -1181,7 +1179,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
               },
               rows: [
                 new TableRow({
-                  children: teleStampImg
+                  children: patientData.isTeleconsultation
                     ? [
                         new TableCell({
                           width: { size: 37, type: WidthType.PERCENTAGE },
@@ -1189,7 +1187,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           margins: { top: 0, bottom: 55, left: 0, right: 40 },
                           children: [
                             new Paragraph({
-                              spacing: { before: 0, after: 15, line: 220 },
+                              spacing: { before: 0, after: 20 },
                               children: [
                                 new TextRun({
                                   text: 'PAH Calc',
@@ -1213,13 +1211,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                               ],
                             }),
                             new Paragraph({
-                              spacing: { before: 0, after: 0, line: 200 },
+                              spacing: { before: 0, after: 0 },
                               children: [
                                 new TextRun({
-                                  text: 'Predict Adult Height Software',
+                                  text: 'Predict Adult Height Multi-modals',
                                   italics: true,
-                                  size: 18, // 9pt
-                                  characterSpacing: 12,
+                                  size: 17, // 8.5pt - balanced width matching PAH Calc® by Dr.Son
                                   color: '333333',
                                 }),
                               ],
@@ -1234,16 +1231,18 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                             new Paragraph({
                               alignment: AlignmentType.CENTER,
                               spacing: { before: 0, after: 0 },
-                              children: [
-                                new ImageRun({
-                                  data: teleStampImg.uint8Array,
-                                  transformation: {
-                                    width: 104,
-                                    height: Math.round((104 / teleStampImg.width) * teleStampImg.height),
-                                  },
-                                  type: 'png',
-                                }),
-                              ],
+                              children: teleStampImg
+                                ? [
+                                    new ImageRun({
+                                      data: teleStampImg.uint8Array,
+                                      transformation: {
+                                        width: 102,
+                                        height: Math.round((102 / teleStampImg.width) * teleStampImg.height),
+                                      },
+                                      type: 'png',
+                                    }),
+                                  ]
+                                : [],
                             }),
                           ],
                         }),
@@ -1254,7 +1253,7 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           children: [
                             new Paragraph({
                               alignment: AlignmentType.RIGHT,
-                              spacing: { before: 0, after: 15, line: 220 },
+                              spacing: { before: 0, after: 20 },
                               children: [
                                 new TextRun({
                                   text: isEn
@@ -1268,13 +1267,13 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                             }),
                             new Paragraph({
                               alignment: AlignmentType.RIGHT,
-                              spacing: { before: 0, after: 0, line: 200 },
+                              spacing: { before: 0, after: 0 },
                               children: [
                                 new TextRun({
                                   text: isEn
                                     ? 'Dr. Do Tien Son (Consultant)'
                                     : 'BS. Đỗ Tiến Sơn (cố vấn)',
-                                  size: 18, // 9pt
+                                  size: 17, // 8.5pt
                                   italics: true,
                                   color: '333333',
                                 }),
@@ -1985,7 +1984,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
         // BRAND HEADER
         {
           columns:
-            teleStampImg && teleStampImg.dataUrl
+            patientData.isTeleconsultation
               ? [
                   {
                     width: '37%',
@@ -1999,23 +1998,29 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                         lineHeight: 1.0,
                       },
                       {
-                        text: 'Predict Adult Height Software',
+                        text: 'Predict Adult Height Multi-modals',
                         italics: true,
-                        fontSize: 8.8,
-                        characterSpacing: 0.35,
+                        fontSize: 8.4,
                         color: '#333333',
                         margin: [0, 1.5, 0, 0],
                         lineHeight: 1.0,
                       },
                     ],
-                    margin: [0, 0, 0, 1],
+                    margin: [0, 0, 0, 2],
                   },
                   {
                     width: '26%',
-                    image: teleStampImg.dataUrl,
-                    fit: [98, 31],
-                    alignment: 'center',
-                    margin: [0, 0, 0, 1],
+                    stack:
+                      teleStampImg && teleStampImg.dataUrl
+                        ? [
+                            {
+                              image: teleStampImg.dataUrl,
+                              fit: [96, 30],
+                              alignment: 'center',
+                            },
+                          ]
+                        : [],
+                    margin: [0, 0, 0, 2],
                   },
                   {
                     width: '37%',
@@ -2033,14 +2038,14 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                       {
                         text: isEn ? 'Dr. Do Tien Son (Consultant)' : 'BS. Đỗ Tiến Sơn (cố vấn)',
                         italics: true,
-                        fontSize: 8.8,
+                        fontSize: 8.6,
                         color: '#333333',
                         alignment: 'right',
-                        margin: [0, 2.5, 0, 0],
+                        margin: [0, 3.8, 0, 0],
                         lineHeight: 1.0,
                       },
                     ],
-                    margin: [0, 2, 0, 1],
+                    margin: [0, 4.2, 0, 2],
                   },
                 ]
               : [

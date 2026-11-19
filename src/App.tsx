@@ -2311,27 +2311,29 @@ function MainApp() {
               >
                 {/* Report Wrapper for PDF */}
                 <div id="hexapah-report" className="bg-transparent p-2 -mx-2 rounded-md">
-                  {/* Interpretation Text */}
+                  {/* Interpretation Text & Action Buttons */}
                   <div className="mb-8">
-                    <div className={`${theme.cardBg} px-5 pt-6 pb-5 rounded-md border ${theme.cardBorder} relative shadow-xs whitespace-pre-wrap`}>
-                      <div className={`absolute -top-3 left-4 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded border ${theme.cardBorder} ${theme.labelDark} shadow-2xs`}>
-                        {t.conclusionTitle}
+                    {!noBoneAge && (
+                      <div className={`${theme.cardBg} px-5 pt-6 pb-5 rounded-md border ${theme.cardBorder} relative shadow-xs whitespace-pre-wrap`}>
+                        <div className={`absolute -top-3 left-4 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider bg-white rounded border ${theme.cardBorder} ${theme.labelDark} shadow-2xs`}>
+                          {t.conclusionTitle}
+                        </div>
+                        <div className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
+                          {resultTextStr.split('\n').map((line, idx) => {
+                            if (line.endsWith(' *')) {
+                              return (
+                                <div key={idx}>
+                                  <span>{line.slice(0, -2)} </span>
+                                  <span className="font-black text-lg leading-none align-middle">*</span>
+                                </div>
+                              );
+                            }
+                            return <div key={idx}>{line}</div>;
+                          })}
+                        </div>
                       </div>
-                      <div className={`text-sm ${theme.labelDark} leading-relaxed font-medium text-justify`}>
-                        {resultTextStr.split('\n').map((line, idx) => {
-                          if (line.endsWith(' *')) {
-                            return (
-                              <div key={idx}>
-                                <span>{line.slice(0, -2)} </span>
-                                <span className="font-black text-lg leading-none align-middle">*</span>
-                              </div>
-                            );
-                          }
-                          return <div key={idx}>{line}</div>;
-                        })}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4">
+                    )}
+                    <div className={`grid grid-cols-2 ${!noBoneAge ? 'sm:grid-cols-4' : ''} gap-2.5 mt-4`}>
                       <button 
                         onClick={handleCopy}
                         className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all shadow-2xs border font-bold text-sm active:scale-98 ${
@@ -2344,22 +2346,26 @@ function MainApp() {
                         {copied ? <Check size={16} strokeWidth={2.5} /> : <Copy size={16} className="text-[#1b365d]" />}
                         <span>{copied ? (lang === 'vi' ? 'Đã sao chép' : 'Copied') : t.copy}</span>
                       </button>
-                      <button 
-                        onClick={handleExportDocx}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all shadow-2xs border font-bold text-sm bg-[#1b365d] hover:bg-[#152a4a] border-[#1b365d] text-white active:scale-98"
-                        title={lang === 'vi' ? 'Xuất báo cáo Word (.docx)' : 'Export Word (.docx)'}
-                      >
-                        <FileText size={16} />
-                        <span>{lang === 'vi' ? 'Báo cáo Word' : 'Word (.docx)'}</span>
-                      </button>
-                      <button 
-                        onClick={handleExportPdf}
-                        className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all shadow-2xs border font-bold text-sm bg-[#2c4c7e] hover:bg-[#213a61] border-[#2c4c7e] text-white active:scale-98"
-                        title={lang === 'vi' ? 'Xuất báo cáo PDF chuẩn A4 (.pdf)' : 'Export A4 PDF (.pdf)'}
-                      >
-                        <FileDown size={16} />
-                        <span>{lang === 'vi' ? 'Báo cáo PDF' : 'PDF (.pdf)'}</span>
-                      </button>
+                      {!noBoneAge && (
+                        <>
+                          <button 
+                            onClick={handleExportDocx}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all shadow-2xs border font-bold text-sm bg-[#1b365d] hover:bg-[#152a4a] border-[#1b365d] text-white active:scale-98"
+                            title={lang === 'vi' ? 'Xuất báo cáo Word (.docx)' : 'Export Word (.docx)'}
+                          >
+                            <FileText size={16} />
+                            <span>{lang === 'vi' ? 'Báo cáo Word' : 'Word (.docx)'}</span>
+                          </button>
+                          <button 
+                            onClick={handleExportPdf}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all shadow-2xs border font-bold text-sm bg-[#2c4c7e] hover:bg-[#213a61] border-[#2c4c7e] text-white active:scale-98"
+                            title={lang === 'vi' ? 'Xuất báo cáo PDF chuẩn A4 (.pdf)' : 'Export A4 PDF (.pdf)'}
+                          >
+                            <FileDown size={16} />
+                            <span>{lang === 'vi' ? 'Báo cáo PDF' : 'PDF (.pdf)'}</span>
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => setShowResetModal(true)}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md transition-all shadow-2xs border font-bold text-sm bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 active:scale-98"
