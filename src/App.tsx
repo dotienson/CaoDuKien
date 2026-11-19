@@ -126,86 +126,335 @@ const DateInput = ({ value, onChange, label, className = '' }: { value: string, 
   );
 };
 
+const _AUTH_STORAGE_KEY = 'hexaPahAuth_v3';
+const _SESSION_TTL_MS = 5 * 60 * 1000;
+const _U_DIGEST_HEX = [
+  '3a79bd799dd0cbf2',
+  '0665f4383f9c8989',
+  'd2deb2994030ef7e',
+  '088c01cc43381ebc',
+].join('');
+const _P_DIGEST_HEX = [
+  '27e7831a401ef310',
+  'fa48fcceed358804',
+  'cd83afd959a43ed1',
+  'e1d6eb124bf2b1cd',
+].join('');
+
+function _decodeSalt(codes: number[], mask: number): string {
+  return String.fromCharCode(...codes.map((c) => c ^ mask));
+}
+
+// Obfuscated salt byte arrays (XOR mask 0x5A)
+const _U_SALT_CODES = [42, 59, 50, 5, 44, 105, 5, 47, 5, 41, 59, 54, 46, 5, 99, 60, 104, 59];
+const _P_SALT_CODES = [42, 59, 50, 5, 44, 105, 5, 42, 5, 41, 59, 54, 46, 5, 109, 57, 110, 63];
+const _PEPPER_CODES = [62, 40, 41, 53, 52];
+
+async function _sha256Hex(message: string): Promise<string> {
+  const data = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function _constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+async function _computeSessionSignature(expiresAt: number, nonce: string): Promise<string> {
+  const pepper = _decodeSalt(_PEPPER_CODES, 0x5a);
+  const payload = `${_U_DIGEST_HEX}::${_P_DIGEST_HEX}::${expiresAt}::${nonce}::${navigator.userAgent}::${pepper}`;
+  return _sha256Hex(payload);
+}
+
+async function _verifyStoredSession(): Promise<string | null> {
+  try {
+    const raw = sessionStorage.getItem(_AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      !parsed ||
+      typeof parsed.expiresAt !== 'number' ||
+      typeof parsed.nonce !== 'string' ||
+      typeof parsed.sig !== 'string'
+    ) {
+      return null;
+    }
+    if (parsed.expiresAt <= Date.now() || parsed.expiresAt > Date.now() + _SESSION_TTL_MS + 10000) {
+      return null;
+    }
+    const expectedSig = await _computeSessionSignature(parsed.expiresAt, parsed.nonce);
+    return _constantTimeEqual(parsed.sig, expectedSig) ? parsed.sig : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const [logoError, setLogoError] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sessionSig, setSessionSig] = useState<string | null>(null);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number>(0);
   const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const t = translations[lang];
+  const isLoggedIn = Boolean(sessionSig);
 
+  // Global anti-copy, anti-right-click, and anti-inspect protection
   useEffect(() => {
-    try {
-      const authInfo = localStorage.getItem('hexaPahAuth');
-      if (authInfo) {
-        const parsed = JSON.parse(authInfo);
-        if (parsed.isLoggedIn && parsed.expiresAt > Date.now()) {
-          setIsLoggedIn(true);
-        }
+    const preventContext = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const preventCopyCutDrag = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const preventSelect = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const ctrlOrMeta = e.ctrlKey || e.metaKey;
+      const target = e.target as HTMLElement | null;
+      const isInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA';
+
+      // Block F12
+      if (e.key === 'F12' || e.keyCode === 123) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
       }
-    } catch (e) {
-      console.warn('Failed to access auth localStorage');
-    }
+
+      // Block DevTools shortcuts: Ctrl/Cmd + Shift/Alt + I/J/C/K
+      if (
+        ctrlOrMeta &&
+        (e.shiftKey || e.altKey) &&
+        (key === 'i' || key === 'j' || key === 'c' || key === 'k')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // Block View Source (Ctrl+U), Save (Ctrl+S), Print (Ctrl+P), Copy (Ctrl+C), Cut (Ctrl+X)
+      if (ctrlOrMeta && (key === 'u' || key === 's' || key === 'p' || key === 'c' || key === 'x')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // Block Select All outside inputs
+      if (ctrlOrMeta && key === 'a' && !isInput) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    document.addEventListener('contextmenu', preventContext, { capture: true });
+    document.addEventListener('copy', preventCopyCutDrag, { capture: true });
+    document.addEventListener('cut', preventCopyCutDrag, { capture: true });
+    document.addEventListener('dragstart', preventCopyCutDrag, { capture: true });
+    document.addEventListener('selectstart', preventSelect, { capture: true });
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+
+    return () => {
+      document.removeEventListener('contextmenu', preventContext, { capture: true });
+      document.removeEventListener('copy', preventCopyCutDrag, { capture: true });
+      document.removeEventListener('cut', preventCopyCutDrag, { capture: true });
+      document.removeEventListener('dragstart', preventCopyCutDrag, { capture: true });
+      document.removeEventListener('selectstart', preventSelect, { capture: true });
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
   }, []);
 
+  // Verify signed session on mount and periodically to prevent storage tampering / bypass
   useEffect(() => {
+    let mounted = true;
+    localStorage.removeItem('hexaPahAuth');
+
+    const checkSession = async () => {
+      const validSig = await _verifyStoredSession();
+      if (mounted) {
+        setSessionSig(validSig);
+      }
+    };
+
+    checkSession();
+    const intervalId = setInterval(checkSession, 2500);
+    window.addEventListener('storage', checkSession);
+    window.addEventListener('focus', checkSession);
+
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+      window.removeEventListener('storage', checkSession);
+      window.removeEventListener('focus', checkSession);
+    };
+  }, []);
+
+  // Auto-logout and refresh signed session expiry on user activity
+  useEffect(() => {
+    if (!sessionSig) return;
     let timeoutId: ReturnType<typeof setTimeout>;
+
+    const refreshSession = async () => {
+      const currentValid = await _verifyStoredSession();
+      if (!currentValid) {
+        setSessionSig(null);
+        sessionStorage.removeItem(_AUTH_STORAGE_KEY);
+        return;
+      }
+      const raw = sessionStorage.getItem(_AUTH_STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          const newExpiresAt = Date.now() + _SESSION_TTL_MS;
+          const newSig = await _computeSessionSignature(newExpiresAt, parsed.nonce);
+          sessionStorage.setItem(
+            _AUTH_STORAGE_KEY,
+            JSON.stringify({
+              expiresAt: newExpiresAt,
+              nonce: parsed.nonce,
+              sig: newSig,
+            })
+          );
+          setSessionSig(newSig);
+        } catch {
+          // ignore
+        }
+      }
+    };
 
     const resetTimer = () => {
       clearTimeout(timeoutId);
-      // Auto logout after 5 minutes (300000 ms)
       timeoutId = setTimeout(() => {
-        setIsLoggedIn(false);
-        localStorage.removeItem('hexaPahAuth');
-      }, 5 * 60 * 1000);
+        setSessionSig(null);
+        sessionStorage.removeItem(_AUTH_STORAGE_KEY);
+      }, _SESSION_TTL_MS);
     };
 
-    if (isLoggedIn) {
+    resetTimer();
+    const handleActivity = () => {
       resetTimer();
-      window.addEventListener('mousemove', resetTimer);
-      window.addEventListener('keydown', resetTimer);
-      window.addEventListener('click', resetTimer);
-      window.addEventListener('scroll', resetTimer);
-    }
+    };
+    const refreshInterval = setInterval(refreshSession, 45 * 1000);
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
 
     return () => {
       clearTimeout(timeoutId);
-      window.removeEventListener('mousemove', resetTimer);
-      window.removeEventListener('keydown', resetTimer);
-      window.removeEventListener('click', resetTimer);
-      window.removeEventListener('scroll', resetTimer);
+      clearInterval(refreshInterval);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
     };
-  }, [isLoggedIn]);
+  }, [Boolean(sessionSig)]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.endsWith('12')) {
-      setIsLoggedIn(true);
-      try {
-        localStorage.setItem('hexaPahAuth', JSON.stringify({
-          isLoggedIn: true,
-          expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes (initial)
-        }));
-      } catch (e) {
-        console.warn('Failed to set auth localStorage');
+    if (isVerifying) return;
+
+    const now = Date.now();
+    if (lockoutUntil > now) {
+      const remainSec = Math.ceil((lockoutUntil - now) / 1000);
+      setLoginError(`Tạm khóa đăng nhập. Vui lòng thử lại sau ${remainSec} giây.`);
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const normalizedUser = username.trim().toLowerCase();
+      const trimmedPass = password.trim();
+      const tailSegment = trimmedPass.length >= 2 ? trimmedPass.slice(-2) : '__invalid__';
+
+      const uSalt = _decodeSalt(_U_SALT_CODES, 0x5a);
+      const pSalt = _decodeSalt(_P_SALT_CODES, 0x5a);
+      const pepper = _decodeSalt(_PEPPER_CODES, 0x5a);
+
+      const [uCandidateHash, pCandidateHash] = await Promise.all([
+        _sha256Hex(`${uSalt}::${normalizedUser}::${pepper}`),
+        _sha256Hex(`${pSalt}::${tailSegment}::${pepper}`),
+      ]);
+
+      const isUserMatch = _constantTimeEqual(uCandidateHash, _U_DIGEST_HEX);
+      const isPassMatch =
+        trimmedPass.length >= 2 && _constantTimeEqual(pCandidateHash, _P_DIGEST_HEX);
+
+      if (isUserMatch && isPassMatch) {
+        const randomBytes = new Uint8Array(16);
+        crypto.getRandomValues(randomBytes);
+        const nonce = Array.from(randomBytes)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+        const expiresAt = Date.now() + _SESSION_TTL_MS;
+        const sig = await _computeSessionSignature(expiresAt, nonce);
+
+        sessionStorage.setItem(
+          _AUTH_STORAGE_KEY,
+          JSON.stringify({
+            expiresAt,
+            nonce,
+            sig,
+          })
+        );
+        setFailedAttempts(0);
+        setLoginError('');
+        setPassword('');
+        setSessionSig(sig);
+      } else {
+        const nextAttempts = failedAttempts + 1;
+        setFailedAttempts(nextAttempts);
+        if (nextAttempts >= 5) {
+          setLockoutUntil(Date.now() + 30 * 1000);
+          setLoginError('Nhập sai quá 5 lần. Tạm khóa 30 giây.');
+        } else {
+          setLoginError(translations.vi.loginError);
+        }
       }
-    } else {
+    } catch {
       setLoginError(translations.vi.loginError);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 font-sans">
+      <div
+        onContextMenu={(e) => e.preventDefault()}
+        className="min-h-screen flex flex-col items-center justify-center bg-slate-100 font-sans select-none"
+      >
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="w-full max-w-[350px] mx-4"
+          className="w-full max-w-[360px] mx-4"
         >
           <div className="bg-white px-8 pt-8 pb-8 border border-slate-300 rounded-md flex flex-col items-center shadow-sm">
             
-            <div className="text-center mb-6 w-full flex flex-col items-center justify-center py-2">
+            <div className="text-center mb-6 w-full flex flex-col items-center justify-center py-1">
               <div className="text-3xl tracking-tight text-[#1b365d] leading-tight">
                 <span className="font-extrabold">
                   PAH Calc<sup className="text-[0.42em] font-bold ml-0.5 -top-[0.85em]">®</sup>
@@ -217,26 +466,54 @@ export default function App() {
               </div>
             </div>
             
-            <form onSubmit={handleLogin} className="w-full space-y-3">
+            <form onSubmit={handleLogin} className="w-full space-y-3.5" autoComplete="off">
               <div className="w-full">
+                <label className="block text-xs font-bold text-[#1b365d] mb-1">
+                  {translations.vi.username}
+                </label>
+                <input 
+                  type="text" 
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Nhập tên đăng nhập"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (loginError) setLoginError('');
+                  }}
+                  className="w-full px-3 py-2 rounded border border-slate-300 focus:border-[#1b365d] bg-slate-50 focus:bg-white outline-none text-slate-900 text-sm transition-colors"
+                />
+              </div>
+
+              <div className="w-full">
+                <label className="block text-xs font-bold text-[#1b365d] mb-1">
+                  {translations.vi.password}
+                </label>
                 <input 
                   type="password" 
-                  placeholder="Mã truy cập"
+                  autoComplete="new-password"
+                  placeholder="Nhập mật khẩu"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-3 py-2.5 rounded border border-slate-300 focus:border-[#1b365d] bg-slate-50 outline-none text-slate-900 text-xs transition-colors"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (loginError) setLoginError('');
+                  }}
+                  className="w-full px-3 py-2 rounded border border-slate-300 focus:border-[#1b365d] bg-slate-50 focus:bg-white outline-none text-slate-900 text-sm transition-colors"
                 />
               </div>
 
               {loginError && (
-                <p className="text-red-600 text-sm text-center my-3">
+                <p className="text-red-600 text-xs font-medium text-center pt-0.5">
                   {loginError}
                 </p>
               )}
 
               <button 
                 type="submit"
-                className="w-full bg-[#1b365d] hover:bg-[#152a4a] text-white font-semibold py-2 rounded text-sm transition-colors mt-2"
+                disabled={isVerifying}
+                className="w-full bg-[#1b365d] hover:bg-[#152a4a] disabled:opacity-60 text-white font-semibold py-2.5 rounded text-sm transition-colors mt-2"
               >
                 {translations.vi.login}
               </button>

@@ -864,11 +864,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
           new TableCell({
             width: { size: 40, type: WidthType.PERCENTAGE },
             shading: { fill: 'FFFFFF' },
-            margins: { top: 70, bottom: 70, left: 120, right: 120 },
+            margins: { top: 42, bottom: 42, left: 120, right: 120 },
             verticalAlign: VerticalAlign.CENTER,
             children: [
               new Paragraph({
                 alignment: AlignmentType.LEFT,
+                spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                 children: [
                   new TextRun({
                     text: isEn ? 'Prediction Method' : 'Phương pháp dự đoán',
@@ -882,11 +883,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
           new TableCell({
             width: { size: 20, type: WidthType.PERCENTAGE },
             shading: { fill: 'FFFFFF' },
-            margins: { top: 70, bottom: 70, left: 100, right: 100 },
+            margins: { top: 42, bottom: 42, left: 100, right: 100 },
             verticalAlign: VerticalAlign.CENTER,
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                 children: [new TextRun({ text: 'PAH ± SD (cm)', bold: true, size: 20 })],
               }),
             ],
@@ -894,11 +896,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
           new TableCell({
             width: { size: 22, type: WidthType.PERCENTAGE },
             shading: { fill: 'FFFFFF' },
-            margins: { top: 70, bottom: 70, left: 100, right: 100 },
+            margins: { top: 42, bottom: 42, left: 100, right: 100 },
             verticalAlign: VerticalAlign.CENTER,
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                 children: [
                   new TextRun({
                     text: isEn ? '95% CI' : 'Khoảng tin cậy 95%',
@@ -912,11 +915,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
           new TableCell({
             width: { size: 18, type: WidthType.PERCENTAGE },
             shading: { fill: 'FFFFFF' },
-            margins: { top: 70, bottom: 70, left: 100, right: 100 },
+            margins: { top: 42, bottom: 42, left: 100, right: 100 },
             verticalAlign: VerticalAlign.CENTER,
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                 children: [
                   new TextRun({
                     text: isEn ? 'Diff vs. MPH' : 'So với MPH',
@@ -935,14 +939,15 @@ export async function exportDocx(payload: ClinicalReportPayload) {
             children: [
               new TableCell({
                 shading: { fill: 'FFFFFF' },
-                margins: { top: 60, bottom: 60, left: 120, right: 120 },
+                margins: { top: 36, bottom: 36, left: 120, right: 120 },
                 verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
+                    spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                     children: [
                       new TextRun({ text: row.methodName, bold: true, size: 20 }),
                       ...(row.isPreferred
-                        ? [new TextRun({ text: ' *', bold: true, size: 28, color: '000000' })]
+                        ? [new TextRun({ text: ' *', bold: true, size: 25, color: '000000' })]
                         : []),
                     ],
                   }),
@@ -950,11 +955,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
               }),
               new TableCell({
                 shading: { fill: 'FFFFFF' },
-                margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                margins: { top: 36, bottom: 36, left: 100, right: 100 },
                 verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
+                    spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                     children: [
                       new TextRun({
                         text: `${row.pah.toFixed(1)} ± ${row.error.toFixed(1)}`,
@@ -967,11 +973,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
               }),
               new TableCell({
                 shading: { fill: 'FFFFFF' },
-                margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                margins: { top: 36, bottom: 36, left: 100, right: 100 },
                 verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
+                    spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                     children: [
                       new TextRun({
                         text: `${row.ci95Low.toFixed(1)} – ${row.ci95High.toFixed(1)} cm`,
@@ -983,11 +990,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
               }),
               new TableCell({
                 shading: { fill: 'FFFFFF' },
-                margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                margins: { top: 36, bottom: 36, left: 100, right: 100 },
                 verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
+                    spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                     children: [
                       new TextRun({
                         text:
@@ -1013,11 +1021,11 @@ export async function exportDocx(payload: ClinicalReportPayload) {
             new TableCell({
               columnSpan: 4,
               shading: { fill: 'FFFFFF' },
-              margins: { top: 45, bottom: 45, left: 120, right: 120 },
+              margins: { top: 34, bottom: 34, left: 120, right: 120 },
               children: [
                 new Paragraph({
                   alignment: AlignmentType.JUSTIFIED,
-                  spacing: { before: 15, after: 15, line: 220 },
+                  spacing: { before: 6, after: 6, line: 205 },
                   children: [
                     new TextRun({
                       text: isEn ? 'Model Metrics & Coefficients: ' : 'Chỉ số & Hệ số mô hình: ',
@@ -1178,10 +1186,10 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                         new TableCell({
                           width: { size: 37, type: WidthType.PERCENTAGE },
                           verticalAlign: VerticalAlign.CENTER,
-                          margins: { top: 0, bottom: 60, left: 0, right: 40 },
+                          margins: { top: 0, bottom: 55, left: 0, right: 40 },
                           children: [
                             new Paragraph({
-                              spacing: { before: 0, after: 10 },
+                              spacing: { before: 0, after: 15, line: 220 },
                               children: [
                                 new TextRun({
                                   text: 'PAH Calc',
@@ -1204,6 +1212,18 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                                 }),
                               ],
                             }),
+                            new Paragraph({
+                              spacing: { before: 0, after: 0, line: 200 },
+                              children: [
+                                new TextRun({
+                                  text: 'Predict Adult Height Software',
+                                  italics: true,
+                                  size: 18, // 9pt
+                                  characterSpacing: 12,
+                                  color: '333333',
+                                }),
+                              ],
+                            }),
                           ],
                         }),
                         new TableCell({
@@ -1218,8 +1238,8 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                                 new ImageRun({
                                   data: teleStampImg.uint8Array,
                                   transformation: {
-                                    width: 96,
-                                    height: Math.round((96 / teleStampImg.width) * teleStampImg.height),
+                                    width: 104,
+                                    height: Math.round((104 / teleStampImg.width) * teleStampImg.height),
                                   },
                                   type: 'png',
                                 }),
@@ -1229,12 +1249,12 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                         }),
                         new TableCell({
                           width: { size: 37, type: WidthType.PERCENTAGE },
-                          margins: { top: 0, bottom: 60, left: 40, right: 0 },
-                          verticalAlign: VerticalAlign.BOTTOM,
+                          margins: { top: 0, bottom: 55, left: 40, right: 0 },
+                          verticalAlign: VerticalAlign.CENTER,
                           children: [
                             new Paragraph({
                               alignment: AlignmentType.RIGHT,
-                              spacing: { before: 0, after: 10 },
+                              spacing: { before: 0, after: 15, line: 220 },
                               children: [
                                 new TextRun({
                                   text: isEn
@@ -1242,6 +1262,21 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                                     : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
                                   size: 19,
                                   italics: true,
+                                  color: '000000',
+                                }),
+                              ],
+                            }),
+                            new Paragraph({
+                              alignment: AlignmentType.RIGHT,
+                              spacing: { before: 0, after: 0, line: 200 },
+                              children: [
+                                new TextRun({
+                                  text: isEn
+                                    ? 'Dr. Do Tien Son (Consultant)'
+                                    : 'BS. Đỗ Tiến Sơn (cố vấn)',
+                                  size: 18, // 9pt
+                                  italics: true,
+                                  color: '333333',
                                 }),
                               ],
                             }),
@@ -1448,9 +1483,10 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           new TableCell({
                             columnSpan: 4,
                             shading: { fill: 'FFFFFF' },
-                            margins: { top: 60, bottom: 60, left: 140, right: 140 },
+                            margins: { top: 44, bottom: 44, left: 140, right: 140 },
                             children: [
                               new Paragraph({
+                                spacing: { before: 0, after: 0, line: 220, lineRule: LineRuleType.EXACT },
                                 children: [
                                   new TextRun({
                                     text: isEn
@@ -1568,9 +1604,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
 
                           return new Paragraph({
                             spacing: {
-                              before: 0,
-                              after: 0,
-                              line: 240,
+                              before: 14,
+                              after: 14,
+                              line: 272,
                               lineRule: LineRuleType.EXACT,
                             },
                             alignment: isBullet ? AlignmentType.LEFT : AlignmentType.JUSTIFIED,
@@ -1581,9 +1617,9 @@ export async function exportDocx(payload: ClinicalReportPayload) {
                           ? [
                               new Paragraph({
                                 spacing: {
-                                  before: 0,
-                                  after: 0,
-                                  line: 240,
+                                  before: 14,
+                                  after: 14,
+                                  line: 272,
                                   lineRule: LineRuleType.EXACT,
                                 },
                                 alignment: AlignmentType.LEFT,
@@ -1746,8 +1782,8 @@ export async function exportPdf(payload: ClinicalReportPayload) {
       vLineColor: () => '#000000',
       paddingLeft: () => 7,
       paddingRight: () => 7,
-      paddingTop: () => 4.5,
-      paddingBottom: () => 4.5,
+      paddingTop: () => 3.0,
+      paddingBottom: () => 3.0,
     };
 
     const outerBoxLayout = {
@@ -1783,6 +1819,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
             : 'II. BẢNG TỔNG HỢP KẾT QUẢ DỰ ĐOÁN CHIỀU CAO TRƯỞNG THÀNH (PAH)',
           bold: true,
           fontSize: 10,
+          lineHeight: 1.05,
           colSpan: 4,
           alignment: 'left',
         },
@@ -1795,19 +1832,22 @@ export async function exportPdf(payload: ClinicalReportPayload) {
           text: isEn ? 'Prediction Method' : 'Phương pháp dự đoán',
           bold: true,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'left',
         },
-        { text: 'PAH ± SD (cm)', bold: true, fontSize: 9.5, alignment: 'center' },
+        { text: 'PAH ± SD (cm)', bold: true, fontSize: 9.5, lineHeight: 1.05, alignment: 'center' },
         {
           text: isEn ? '95% CI' : 'Khoảng tin cậy 95%',
           bold: true,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'center',
         },
         {
           text: isEn ? 'Diff vs. MPH' : 'So với MPH',
           bold: true,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'center',
         },
       ],
@@ -1816,22 +1856,25 @@ export async function exportPdf(payload: ClinicalReportPayload) {
           text: row.isPreferred
             ? [
                 { text: row.methodName, bold: true, fontSize: 9.5 },
-                { text: ' *', bold: true, fontSize: 13.5 },
+                { text: ' *', bold: true, fontSize: 12, lineHeight: 0.9 },
               ]
             : row.methodName,
           bold: true,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'left',
         },
         {
           text: `${row.pah.toFixed(1)} ± ${row.error.toFixed(1)}`,
           bold: true,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'center',
         },
         {
           text: `${row.ci95Low.toFixed(1)} – ${row.ci95High.toFixed(1)} cm`,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'center',
         },
         {
@@ -1841,6 +1884,7 @@ export async function exportPdf(payload: ClinicalReportPayload) {
               : '---',
           bold: true,
           fontSize: 9.5,
+          lineHeight: 1.05,
           alignment: 'center',
         },
       ]),
@@ -1945,30 +1989,58 @@ export async function exportPdf(payload: ClinicalReportPayload) {
               ? [
                   {
                     width: '37%',
-                    text: [
-                      { text: 'PAH Calc', bold: true, fontSize: 15, color: '#000000' },
-                      { text: '®', bold: true, fontSize: 10.5, sup: true, color: '#000000' },
-                      { text: ' by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
+                    stack: [
+                      {
+                        text: [
+                          { text: 'PAH Calc', bold: true, fontSize: 15, color: '#000000' },
+                          { text: '®', bold: true, fontSize: 10.5, sup: true, color: '#000000' },
+                          { text: ' by Dr.Son', bold: false, fontSize: 12.5, color: '#333333' },
+                        ],
+                        lineHeight: 1.0,
+                      },
+                      {
+                        text: 'Predict Adult Height Software',
+                        italics: true,
+                        fontSize: 8.8,
+                        characterSpacing: 0.35,
+                        color: '#333333',
+                        margin: [0, 1.5, 0, 0],
+                        lineHeight: 1.0,
+                      },
                     ],
-                    lineHeight: 1.05,
-                    margin: [0, 3, 0, 0],
+                    margin: [0, 0, 0, 1],
                   },
                   {
                     width: '26%',
                     image: teleStampImg.dataUrl,
-                    fit: [92, 30],
+                    fit: [98, 31],
                     alignment: 'center',
-                    margin: [0, -2, 0, 2],
+                    margin: [0, 0, 0, 1],
                   },
                   {
                     width: '37%',
-                    text: isEn
-                      ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
-                      : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
-                    italics: true,
-                    fontSize: 9.5,
-                    alignment: 'right',
-                    margin: [0, 6, 0, 0],
+                    stack: [
+                      {
+                        text: isEn
+                          ? `Analysis Date: ${formatDateVN(patientData.examDate)}`
+                          : `Phân tích ngày: ${formatDateVN(patientData.examDate)}`,
+                        italics: true,
+                        fontSize: 9.5,
+                        color: '#000000',
+                        alignment: 'right',
+                        lineHeight: 1.0,
+                      },
+                      {
+                        text: isEn ? 'Dr. Do Tien Son (Consultant)' : 'BS. Đỗ Tiến Sơn (cố vấn)',
+                        italics: true,
+                        fontSize: 8.8,
+                        color: '#333333',
+                        alignment: 'right',
+                        margin: [0, 2.5, 0, 0],
+                        lineHeight: 1.0,
+                      },
+                    ],
+                    margin: [0, 2, 0, 1],
                   },
                 ]
               : [
@@ -2224,8 +2296,8 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                               : []),
                           ],
                           alignment: 'left',
-                          lineHeight: 1.18,
-                          margin: [0, 0, 0, 0],
+                          lineHeight: 1.3,
+                          margin: [0, 1.2, 0, 1.2],
                         };
                       }
 
@@ -2245,8 +2317,8 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                         bold: isBullet,
                         fontSize: 9.5,
                         alignment: isBullet ? 'left' : 'justify',
-                        lineHeight: 1.18,
-                        margin: [0, 0, 0, 0],
+                        lineHeight: 1.3,
+                        margin: [0, 1.2, 0, 1.2],
                       };
                     }),
                     ...(hasPreferredRow
@@ -2269,8 +2341,8 @@ export async function exportPdf(payload: ClinicalReportPayload) {
                               },
                             ],
                             alignment: 'left',
-                            lineHeight: 1.18,
-                            margin: [0, 0, 0, 0],
+                            lineHeight: 1.3,
+                            margin: [0, 1.2, 0, 1.2],
                           },
                         ]
                       : []),
